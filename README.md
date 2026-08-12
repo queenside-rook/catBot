@@ -50,3 +50,7 @@ Run catBot.exe
 If you want to run this from a bot account, log in to that bot account in your default browser now.
 
 Type "start", program will direct you from there
+
+## Debugging
+
+To enable debug mode, run catBot.exe with command --debug. To log the debug, open a CLI in catBot.exe's folder and enter `./catBot.exe --debug | tee debug.txt`
