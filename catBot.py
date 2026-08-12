@@ -23,7 +23,6 @@ import splash
 import sys
 
 print(splash.title)
-input()
 
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.USER_BOT, AuthScope.CHANNEL_BOT]
 
@@ -34,7 +33,23 @@ try:
         toml = tomllib.load(f)
         toml = toml.get("format_strings")
 except FileNotFoundError:
-    print("\033[91mcatBot.toml missing!\033[0m")
+    print("\033[91mcatBot.toml missing! A new one will be generated for you.\033[0m")
+    catBottoml = """[format_strings]
+# Available variables are {ID}, {key}, {date}, {user}, {category}, and {quoter}
+empty_db = "No quotes found!" # message if your quote database is empty; takes no variables
+keyed = "- {user} on {date} ( Quoted by {quoter} with ID #{ID} and key {key} )"
+unkeyed = "- {user} on {date} ( Quoted by {quoter} with ID: #{ID} )" # takes any variable but {key}
+key_exists = "Quote with key {key} already exists!" # only takes the variable {key}
+save_success_keyed = "Successfully saved quote with ID #{ID} and key {key}"
+save_success_unkeyed = "Successfully saved quote with ID #{ID}!" # takes any variable but {key}
+delete_success = "Successfully deleted quote!" # only takes the variable {ID}
+update_success = "Successfully update quote!" # only takes the variable {ID}
+invalid_ID = "No quote with ID #{ID} found!" # only takes the variable {ID}
+invalid_key = "No quote with key {key} found!" # only takes the variable {key}"""
+    with open("catBot.toml", mode="w") as fp:
+        fp.write(catBottoml)
+
+input()
 
 def get_last_quote():
     db_list = db.all()
@@ -226,9 +241,12 @@ async def on_message(msg: ChatMessage):
             await find_quote()
 
         elif re.search("^!quote -\\d$", msg.text):
-            quote_id = get_last_quote() + 1 + int(re.search("(?P<number>-\\d)", msg.text).group(1))
+            if int(re.search("-(\\d)", msg.text).group(1)) > len(db):
+                await chat.send_message(TARGET_CHANNEL, "Requested negative index is too large!")
+            else:
+                quote_id = db.all()[int(re.search("(-\\d)", msg.text).group(1))].doc_id
 
-            await find_quote(quote_id)
+                await find_quote(quote_id)
 
         elif re.search("^!quote delete \\d$", msg.text):
             delete_quote(int(re.search("^!quote delete (\\d$)", msg.text).group(1)))
@@ -241,6 +259,9 @@ async def on_message(msg: ChatMessage):
             ID = db.search(index=re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(1))
 
             await chat.send_message(TARGET_CHANNEL, toml.get("update_success").format(ID=ID))
+
+        elif re.search("^!quote help$", msg.text):
+            await chat.send_message(TARGET_CHANNEL, "Find out how to use !quote at https://github.com/queenside-rook/catBot/blob/main/README.md")
 
 def already_running(title, text, style):
     atexit.unregister(exit_script)
