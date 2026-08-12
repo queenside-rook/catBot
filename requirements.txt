@@ -1,4 +1,4 @@
-termcolor==3.3.0
 tinydb==4.9.0
 tinydb_encrypted_jsonstorage==0.1.2
+tomli_w==1.2.0
 twitchapi==4.5.0
