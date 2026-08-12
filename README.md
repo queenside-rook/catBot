@@ -15,6 +15,10 @@ A small, simple Twitch chat bot to save and retrieve quotes.
 
 `!quote ID` will return quote with entered ID
 
+`!quote !key` will return quote with entered key
+
+`!quote -n` will return the (n-1)th quote from most recent, so `!quote -1` returns the most recent quote, `!quote -2` the one before that, etc
+
 ## Setup
 
 Go to https://dev.twitch.tv/console
@@ -44,7 +48,3 @@ Copy down your Client Secret
 Run catBot.exe
 
 Type "start", program will direct you from there
-`!quote !key` will return quote with entered key
-
-`!quote -n` will return the (n-1)th quote from most recent, so `!quote -1` returns the most recent quote, `!quote -2` the one before that, etc
-
