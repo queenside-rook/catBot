@@ -50,6 +50,7 @@ invalid_key = "No quote with key {key} found!" # only takes the variable {key}
 
 [settings]
 ignore = ["streamelements", "nightbot"] # list all users (such as your bots) you want to be ignored by catBot
+using_bot = true # set to false if you're using your broadcaster account as the bot
 vip_only = false # set to true if you only want VIPs and mods to be able to quote streamers directly with !quote "text"
 super_vip_only = false # set to true if you only want VIPs and mods to be able to use !quote to quote anyone at all
 subs_only = false # as above but for subs, VIPs, and mods
@@ -63,7 +64,10 @@ def get_last_quote():
     db_list = db.all()
     return db_list[-1].doc_id
 
-def insert_quote(key, date, user, category, quote, quoter):
+async def insert_quote(key, date, user, category, quote, quoter):
+    if re.search("^!quote", quote):
+        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+    
     quote_data = {
         "key": key,
         "date": date,
@@ -172,7 +176,7 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = msg.reply_parent_msg_body.replace("\\s", " ")
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                await insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
@@ -209,7 +213,7 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                await insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
@@ -231,7 +235,7 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    insert_quote(key, date, user, category, quote, quoter)
+                    await insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
@@ -247,7 +251,7 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                await insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
@@ -268,7 +272,7 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    insert_quote(key, date, user, category, quote, quoter)
+                    await insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
@@ -357,18 +361,26 @@ async def start_bot():
         except Exception:
             print("Unrecoverable error.")
 
-    global ignored_list
-    ignored = twitch.get_users(None, list(tomlset.get("ignore")))
-    ignored_list = []
-    async for data in ignored:
-        ignored = data.id
-        ignored_list.append(ignored)
-
     chat = await Chat(twitch, no_shared_chat_messages=False)
     channel_data = twitch.get_users(logins=TARGET_CHANNEL)
     async for data in channel_data:
         channel_id = data
     channel_id = channel_id.id
+
+    global ignored_list
+    ignored = twitch.get_users(logins=list(tomlset.get("ignore")))
+    bot_id = twitch.get_users()
+    async for data in bot_id:
+        bot_id = data.id
+    ignored_list = []
+    async for data in ignored:
+        ignored = data.id
+        ignored_list.append(ignored)
+    if not tomlset.get("using_bot"):
+        try:
+            ignored_list.remove(bot_id)
+        except Exception:
+            pass
 
     chat.register_event(ChatEvent.READY, on_ready)
     chat.register_event(ChatEvent.MESSAGE, on_message)
