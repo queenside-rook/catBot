@@ -1,0 +1,12 @@
+[format_strings]
+# Available variables are {ID}, {key}, {date}, {user}, {category}, and {quoter}
+empty_db = "No quotes found!" # message if your quote database is empty; takes no variables
+keyed = "- {user} on {date} ( Quoted by {quoter} with ID #{ID} and key {key} )"
+unkeyed = "- {user} on {date} ( Quoted by {quoter} with ID: #{ID} )" # takes any variable but {key}
+key_exists = "Quote with key {key} already exists!" # only takes the variable {key}
+save_success_keyed = "Successfully saved quote with ID #{ID} and key {key}"
+save_success_unkeyed = "Successfully saved quote with ID #{ID}!" # takes any variable but {key}
+delete_success = "Successfully deleted quote!" # only takes the variable {ID}
+update_success = "Successfully update quote!" # only takes the variable {ID}
+invalid_ID = "No quote with ID #{ID} found!" # only takes the variable {ID}
+invalid_key = "No quote with key {key} found!" # only takes the variable {key}
