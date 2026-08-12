@@ -31,7 +31,8 @@ db = TinyDB('quotes.json')
 try:
     with open("catBot.toml", "rb") as f:
         toml = tomllib.load(f)
-        toml = toml.get("format_strings")
+        tomlstr = toml.get("format_strings")
+        tomlset = toml.get("settings")
 except FileNotFoundError:
     print("\033[91mcatBot.toml missing! A new one will be generated for you.\033[0m")
     catBottoml = """[format_strings]
@@ -45,7 +46,14 @@ save_success_unkeyed = "Successfully saved quote with ID #{ID}!" # takes any var
 delete_success = "Successfully deleted quote!" # only takes the variable {ID}
 update_success = "Successfully update quote!" # only takes the variable {ID}
 invalid_ID = "No quote with ID #{ID} found!" # only takes the variable {ID}
-invalid_key = "No quote with key {key} found!" # only takes the variable {key}"""
+invalid_key = "No quote with key {key} found!" # only takes the variable {key}
+
+[settings]
+ignore = ["streamelements", "nightbot"] # list all users (such as your bots) you want to be ignored by catBot
+vip_only = false # set to true if you only want VIPs and mods to be able to quote streamers directly with !quote "text"
+super_vip_only = false # set to true if you only want VIPs and mods to be able to use !quote to quote anyone at all
+subs_only = false # as above but for subs, VIPs, and mods
+super_subs_only = false # as above but for subs, VIPs, and mods"""
     with open("catBot.toml", mode="w") as fp:
         fp.write(catBottoml)
 
@@ -89,14 +97,14 @@ def check_index(index):
 
 async def find_quote(index = None, key = None):
     if len(db) == 0:
-        await chat.send_message(TARGET_CHANNEL, toml.get('empty_db'))
+        await chat.send_message(TARGET_CHANNEL, tomlstr.get('empty_db'))
         return
     try:
         if key != None:
             if check_key(key):
                 results = db.get(Query().key == key)
             else:
-                await chat.send_message(TARGET_CHANNEL, toml.get('invalid_key').format(key=key))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_key').format(key=key))
                 return
         elif index != None:
             results = db.get(doc_id=int(index))
@@ -121,21 +129,41 @@ async def find_quote(index = None, key = None):
 
         if key != "":
             await chat.send_message(TARGET_CHANNEL, quote)
-            await chat.send_message(TARGET_CHANNEL, toml.get("keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
         else:
             await chat.send_message(TARGET_CHANNEL, quote)
-            await chat.send_message(TARGET_CHANNEL, toml.get("unkeyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("unkeyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
     except Exception as e:
         raise Exception(
             "The following error occurred: ", e)
 
+def is_auth(msg):
+    if tomlset.get("vip_only") and not (msg.user.vip or msg.user.mod or msg.user.id == channel_id):
+        return False
+    elif tomlset.get("subs_only") and not (msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id):
+        return False
+    else:
+        return True
+
+def is_super_auth(msg):
+    if tomlset.get("super_vip_only") and not (msg.user.vip or msg.user.mod or msg.user.id == channel_id):
+        return False
+    elif tomlset.get("super_subs_only") and not (msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id):
+        return False
+    else:
+        return True
+
 async def on_ready(ready_event: EventData):
     await ready_event.chat.join_room(TARGET_CHANNEL)
 
 async def on_message(msg: ChatMessage):
+    if msg.user.id in ignored_list:
+        return
     if re.search("^!quote", msg.text) != None:
         if msg.reply_parent_msg_body != None:
+            if not is_super_auth(msg):
+                return
             command = re.search("^@[A-Za-z_]* !quote( |)(?P<key>!.*$|$)", msg.text)
             if command != None:
                 key = command.group(2)
@@ -147,7 +175,7 @@ async def on_message(msg: ChatMessage):
                 insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
-                await chat.send_message(TARGET_CHANNEL, toml.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
         elif re.search("^!quote (?P<number>\\d*$)", msg.text) != None:
             command = re.search("^!quote (?P<number>\\d*$)", msg.text)
@@ -156,7 +184,7 @@ async def on_message(msg: ChatMessage):
             else:
                 ID = command.group(1)
 
-                await chat.send_message(TARGET_CHANNEL, toml.get("invalid_ID").format(ID=ID))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID))
 
         elif re.search("^!quote (?P<key>![^ ]*$)", msg.text):
             command = re.search("^!quote (?P<key>![^ ]*$)", msg.text)
@@ -164,8 +192,14 @@ async def on_message(msg: ChatMessage):
                 await find_quote(None, command.group(1))
 
         elif re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_]*|) *\"(?P<quote>.*)\"$", msg.text):
+            if not is_super_auth(msg):
+                return
             command = re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_]*|) *\"(?P<quote>.*)\"$", msg.text)
+            if command.group(4) == "":
+                return
             if command.group(2) == "" and command.group(3) == "":
+                if not is_auth(msg):
+                    return
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
                 if msg.source_room_id == None:
@@ -178,13 +212,15 @@ async def on_message(msg: ChatMessage):
                 insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
-                await chat.send_message(TARGET_CHANNEL, toml.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
             elif command.group(2) != "" and command.group(3) == "":
+                if not is_auth(msg):
+                    return
                 if check_key(command.group(2)):
                     key = command.group(2)
 
-                    await chat.send_message(TARGET_CHANNEL, toml.get("key_exists").format(key=key))
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key))
                 else:
                     key = command.group(2)
                     date = datetime.now().strftime("%m/%d/%y")
@@ -198,7 +234,7 @@ async def on_message(msg: ChatMessage):
                     insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
 
-                    await chat.send_message(TARGET_CHANNEL, toml.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
             elif command.group(2) == "" and command.group(3) != "":
                 key = command.group(2)
@@ -214,13 +250,13 @@ async def on_message(msg: ChatMessage):
                 insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
 
-                await chat.send_message(TARGET_CHANNEL, toml.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
             elif command.group(2) != "" and command.group(3) != "":
                 if check_key(command.group(2)):
                     key = command.group(2)
 
-                    await chat.send_message(TARGET_CHANNEL, toml.get("key_exists").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
                 else:
                     key = command.group(2)
                     date = datetime.now().strftime("%m/%d/%y")
@@ -235,7 +271,7 @@ async def on_message(msg: ChatMessage):
                     insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
 
-                    await chat.send_message(TARGET_CHANNEL, toml.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
         elif re.search("^!quote$", msg.text):
             await find_quote()
@@ -249,16 +285,20 @@ async def on_message(msg: ChatMessage):
                 await find_quote(quote_id)
 
         elif re.search("^!quote delete \\d$", msg.text):
+            if not msg.user.mod and not msg.user.id == channel_id:
+                return
             delete_quote(int(re.search("^!quote delete (\\d$)", msg.text).group(1)))
             ID = re.search("^!quote delete (\\d$)", msg.text).group(1)
 
-            await chat.send_message(TARGET_CHANNEL, toml.get("delete_success").format(ID=ID))
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("delete_success").format(ID=ID))
 
         elif re.search("^!quote update (\\d) \"(.*)\"", msg.text):
+            if not msg.user.mod and not msg.user.id == channel_id:
+                return
             update_quote(re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(1), re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(2))
             ID = db.search(index=re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(1))
 
-            await chat.send_message(TARGET_CHANNEL, toml.get("update_success").format(ID=ID))
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("update_success").format(ID=ID))
 
         elif re.search("^!quote help$", msg.text):
             await chat.send_message(TARGET_CHANNEL, "Find out how to use !quote at https://github.com/queenside-rook/catBot/blob/main/README.md")
@@ -316,6 +356,13 @@ async def start_bot():
             await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
         except Exception:
             print("Unrecoverable error.")
+
+    global ignored_list
+    ignored = twitch.get_users(None, list(tomlset.get("ignore")))
+    ignored_list = []
+    async for data in ignored:
+        ignored = data.id
+        ignored_list.append(ignored)
 
     chat = await Chat(twitch, no_shared_chat_messages=False)
     channel_data = twitch.get_users(logins=TARGET_CHANNEL)
