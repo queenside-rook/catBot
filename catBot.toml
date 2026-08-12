@@ -14,7 +14,7 @@ invalid_key = "No quote with key {key} found!" # only takes the variable {key}
 [settings]
 ignore = [] # list all users (such as your bots) you want to be ignored by catBot
 using_bot = true # set to false if you're using your broadcaster account as the bot
-vip_only = true # set to true if you only want VIPs and mods to be able to quote streamers directly with !quote "text"
+vip_only = false # set to true if you only want VIPs and mods to be able to quote streamers directly with !quote "text"
 super_vip_only = false # set to true if you only want VIPs and mods to be able to use !quote to quote anyone at all
 subs_only = false # as above but for subs, VIPs, and mods
 super_subs_only = false # as above but for subs, VIPs, and mods
