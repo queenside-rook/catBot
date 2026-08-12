@@ -64,9 +64,7 @@ def get_last_quote():
     db_list = db.all()
     return db_list[-1].doc_id
 
-async def insert_quote(key, date, user, category, quote, quoter):
-    if re.search("^!quote", quote):
-        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+def insert_quote(key, date, user, category, quote, quoter):
     
     quote_data = {
         "key": key,
@@ -176,8 +174,11 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = msg.reply_parent_msg_body.replace("\\s", " ")
                 quoter = msg.user.id
-                await insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
+                if re.search("^!quote", quote):
+                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    return
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
@@ -213,8 +214,11 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                await insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
+                if re.search("^!quote", quote):
+                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    return
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
@@ -235,8 +239,11 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    await insert_quote(key, date, user, category, quote, quoter)
+                    insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
+                    if re.search("^!quote", quote):
+                        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                        return
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
@@ -251,8 +258,11 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                await insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(key, date, user, category, quote, quoter)
                 ID = get_last_quote()
+                if re.search("^!quote", quote):
+                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    return
 
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
@@ -272,8 +282,11 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    await insert_quote(key, date, user, category, quote, quoter)
+                    insert_quote(key, date, user, category, quote, quoter)
                     ID = get_last_quote()
+                    if re.search("^!quote", quote):
+                        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                        return
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
