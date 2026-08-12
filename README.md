@@ -40,7 +40,7 @@ Type "start", program will direct you from there
 
 `!quote !key` as a reply to a message will quote that message with the given key
 
-`!quote "text"` will create a quote attributed to the streamer whose channel it was entered in (during shared chat)
+`!quote "text"` will create a quote attributed to the streamer whose channel it was entered in (including during shared chat)
 
 `!quote !key "text"` will do as above but with the given key
 
