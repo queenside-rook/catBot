@@ -4,20 +4,32 @@ A small, simple Twitch chat bot to save and retrieve quotes.
 ## Setup
 
 Go to https://dev.twitch.tv/console
-Click "Register Your Application"
-Name it whatever you want
-In OAuth Redirect URLs, put "http://localhost:17563" without the quotes
-Select Category Chat Bot
-Leave it as Confidential
-Click "Create"
-Return to https://dev.twitch.tv/console
-Click "Manage" next to your new app
-Copy down your Client ID
-Click "New Secret"
-Copy down your Client Secret
-Run catBot.exe
-Type "start", program will direct you from there
 
+Click "Register Your Application"
+
+Name it whatever you want
+
+In OAuth Redirect URLs, put "http://localhost:17563" without the quotes
+
+Select Category Chat Bot
+
+Leave it as Confidential
+
+Click "Create"
+
+Return to https://dev.twitch.tv/console
+
+Click "Manage" next to your new app
+
+Copy down your Client ID
+
+Click "New Secret"
+
+Copy down your Client Secret
+
+Run catBot.exe
+
+Type "start", program will direct you from there
 
 ## Usage
 
