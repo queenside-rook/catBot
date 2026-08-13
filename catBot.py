@@ -422,7 +422,7 @@ async def on_message(msg: ChatMessage):
                     print("Index too large")
                 await chat.send_message(TARGET_CHANNEL, "Requested negative index is too large!")
             else:
-                quote_id = quote_ids[int(re.search("(-\\d)").group(1))]
+                quote_id = quote_ids[int(re.search("(-\\d)", msg.text).group(1))]
                 await find_quote(index=quote_id)
 
         elif re.search("^!quote delete \\d$", msg.text):
