@@ -17,6 +17,7 @@ from datetime import datetime
 from tinydb import TinyDB, Query
 import tinydb_encrypted_jsonstorage as tae
 import asyncio
+import sqlite3 as sql
 
 import splash
 
@@ -40,7 +41,10 @@ USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.USER_BOT, Auth
 
 if debug:
     print("Fetching quotes DB")
-db = TinyDB('quotes.json')
+
+con = sql.connect("quotes.db", check_same_thread=False)
+cur = con.cursor()
+cur.execute("CREATE TABLE if NOT EXISTS quotes(ID, key, date, user, category, quote, quoter)")
 
 try:
     if debug:
@@ -87,39 +91,37 @@ def print_splash():
 def get_last_quote():
     if debug:
         print("Getting most recent quote index")
-    db_list = db.all()
-    return db_list[-1].doc_id
+    quote_ids = []
+    for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+        quote_ids.append(ids[0])
+    return quote_ids[-1]
 
-def insert_quote(key, date, user, category, quote, quoter):
+def insert_quote(ID, key, date, user, category, quote, quoter):
     if debug:
         print("Inserting quote")
-    quote_data = {
-        "key": key,
-        "date": date,
-        "user": user,
-        "category": category,
-        "quote": quote,
-        "quoter": quoter
-        }
-    if debug:
-        print(quote_data)
-    db.insert(quote_data)
+    cur.execute("""INSERT INTO quotes(id, key, date, user, category, quote, quoter) 
+                    VALUES (?,?,?,?,?,?,?);""", (ID, key, date, user, category, quote, quoter))
+    con.commit()
 
 def delete_quote(index):
     if debug:
         print(f"Deleting quote {index}")
-    db.remove(doc_ids=[int(index)])
+    cur.execute("DELETE FROM quotes WHERE id = ?", (index,))
+    con.commit()
 
 def update_quote(index, new_quote):
     if debug:
         print(f"Updating quote {index} to {new_quote}")
-    db.update({ 'quote' : new_quote }, doc_ids=[int(index)])
+    cur.execute("UPDATE quotes SET quote = ? WHERE id = ?", (new_quote, index))
+    con.commit()
 
 def check_key(key):
     if debug:
         print(f"Checking key {key}")
-    check = db.get(Query().key == key)
-    if check != None:
+    check = []
+    for keys in cur.execute("SELECT key FROM quotes WHERE key = ?", (key,)):
+        check.append(keys[0])
+    if check != []:
         if debug:
             print("Key found")
         return True
@@ -129,10 +131,13 @@ def check_key(key):
         return False
 
 def check_index(index):
+    index = int(index)
     if debug:
         print(f"Checking index {index}")
-    check = db.get(doc_id=index)
-    if check != None:
+    check = []
+    for indicies in cur.execute("SELECT id FROM quotes WHERE id = ?", (index,)):
+        check.append(indicies[0])
+    if check != []:
         if debug:
             print("Index found")
         return True
@@ -144,7 +149,9 @@ def check_index(index):
 async def find_quote(index = None, key = None):
     if debug:
         print(f"Finding quote. Index = {index} and key = {key}")
-    if len(db) == 0:
+    for data in cur.execute("SELECT count(*) FROM quotes"):
+        db_count = data[0]
+    if db_count == 0:
         if debug:
             print("Database empty")
         await chat.send_message(TARGET_CHANNEL, tomlstr.get('empty_db'))
@@ -152,43 +159,51 @@ async def find_quote(index = None, key = None):
     try:
         if key != None:
             if check_key(key):
-                results = db.get(Query().key == key)
+                for data in cur.execute("SELECT * FROM quotes WHERE key = ?", (key,)):
+                    results = data
             else:
                 await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_key').format(key=key))
                 return
         elif index != None:
-            results = db.get(doc_id=int(index))
-            if results == None:
-                return None
+            if check_index(index):
+                for data in cur.execute("SELECT * FROM quotes WHERE id = ?", (index,)):
+                    results = data
+            else:
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_ID').format(ID=index))
         else:
-            all_quotes = db.all()
+            quote_ids = []
+            for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+                quote_ids.append(ids[0])
+            quote_id = choice(quote_ids)
             if debug:
                 print("Finding random quote")
-            results = choice(all_quotes)
+            for data in cur.execute("SELECT * FROM quotes WHERE id = ?", (quote_id,)):
+                results = data
 
-        user = twitch.get_users(results.get("user"))
+        user = twitch.get_users(str(results[3]))
         async for document in user:
             user = document
         user = user.display_name
-        quoter = twitch.get_users(results.get("quoter"))
+        quoter = twitch.get_users(str(results[6]))
         async for document in quoter:
             quoter = document
         quoter = quoter.display_name
-        quote = results.get("quote")
-        date = results.get("date")
-        ID = results.doc_id
-        key = results.get("key")
+        quote = results[5]
+        date = results[2]
+        ID = results[0]
+        key = results[1]
+        category = results[4]
 
         if key != "":
             if debug:
-                print("No key. Sending chat message")
-            await chat.send_message(TARGET_CHANNEL, quote)
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get("keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
-        else:
-            if debug:
                 print("Sending keyed chat message")
             await chat.send_message(TARGET_CHANNEL, quote)
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get("unkeyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter,category=category))
+        else:
+            if debug:
+                print("No key. Sending keyed chat message")
+            await chat.send_message(TARGET_CHANNEL, quote)
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get("unkeyed").format(user=user,date=date,ID=ID,quoter=quoter,category=category))
 
     except Exception as e:
         raise Exception(
@@ -246,13 +261,14 @@ async def on_message(msg: ChatMessage):
             if command != None:
                 if debug:
                     print("Reply with command detected.")
+                ID = get_last_quote() + 1
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
                 user = msg.reply_parent_user_id
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = msg.reply_parent_msg_body.replace("\\s", " ")
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(ID, key, date, user, category, quote, quoter)
                 ID = get_last_quote()
                 if re.search("^!quote", quote):
                     if debug:
@@ -295,6 +311,7 @@ async def on_message(msg: ChatMessage):
                     print("No key and no @ detected. Checking auth")
                 if not is_auth(msg):
                     return
+                ID = get_last_quote() + 1
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
                 if msg.source_room_id == None:
@@ -304,7 +321,7 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(ID, key, date, user, category, quote, quoter)
                 ID = get_last_quote()
                 if re.search("^!quote", quote):
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
@@ -322,6 +339,7 @@ async def on_message(msg: ChatMessage):
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key))
                 else:
+                    ID = get_last_quote() + 1
                     key = command.group(2)
                     date = datetime.now().strftime("%m/%d/%y")
                     if msg.source_room_id == None:
@@ -331,7 +349,7 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    insert_quote(key, date, user, category, quote, quoter)
+                    insert_quote(ID, key, date, user, category, quote, quoter)
                     ID = get_last_quote()
                     if re.search("^!quote", quote):
                         await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
@@ -344,6 +362,7 @@ async def on_message(msg: ChatMessage):
                     print("No key and @ found")
                 if not is_auth(msg):
                     return
+                ID = get_last_quote() + 1
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
                 user = command.group(3).replace("@","")
@@ -354,7 +373,7 @@ async def on_message(msg: ChatMessage):
                 category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                 quote = command.group(4)
                 quoter = msg.user.id
-                insert_quote(key, date, user, category, quote, quoter)
+                insert_quote(ID, key, date, user, category, quote, quoter)
                 ID = get_last_quote()
                 if re.search("^!quote", quote):
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
@@ -370,6 +389,7 @@ async def on_message(msg: ChatMessage):
 
                     await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
                 else:
+                    ID = get_last_quote() + 1
                     key = command.group(2)
                     date = datetime.now().strftime("%m/%d/%y")
                     user = command.group(3).replace("@","")
@@ -380,7 +400,7 @@ async def on_message(msg: ChatMessage):
                     category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
                     quote = command.group(4)
                     quoter = msg.user.id
-                    insert_quote(key, date, user, category, quote, quoter)
+                    insert_quote(ID, key, date, user, category, quote, quoter)
                     ID = get_last_quote()
                     if re.search("^!quote", quote):
                         await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
@@ -394,14 +414,16 @@ async def on_message(msg: ChatMessage):
         elif re.search("^!quote -\\d$", msg.text):
             if debug:
                 print("!quote negative index detected")
-            if int(re.search("-(\\d)", msg.text).group(1)) > len(db):
+            quote_ids = []
+            for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+                quote_ids.append(ids[0])
+            if int(re.search("-(\\d)", msg.text).group(1)) > len(quote_ids):
                 if debug:
                     print("Index too large")
                 await chat.send_message(TARGET_CHANNEL, "Requested negative index is too large!")
             else:
-                quote_id = db.all()[int(re.search("(-\\d)", msg.text).group(1))].doc_id
-
-                await find_quote(quote_id)
+                quote_id = quote_ids[int(re.search("(-\\d)").group(1))]
+                await find_quote(index=quote_id)
 
         elif re.search("^!quote delete \\d$", msg.text):
             if debug:
@@ -414,14 +436,17 @@ async def on_message(msg: ChatMessage):
             await chat.send_message(TARGET_CHANNEL, tomlstr.get("delete_success").format(ID=ID))
 
         elif re.search("^!quote update (\\d) \"(.*)\"", msg.text):
+            command = re.search("^!quote update (\\d) \"(.*)\"", msg.text)
             if debug:
                 print("!quote update detected")
             if not msg.user.mod and not msg.user.id == channel_id:
                 return
-            update_quote(re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(1), re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(2))
-            ID = db.search(index=re.search("^!quote update (\\d) \"(.*)\"", msg.text).group(1))
-
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get("update_success").format(ID=ID))
+            if check_index(int(command.group(1))):
+                update_quote(int(command.group(1)), command.group(2))
+                ID = command.group(1)
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("update_success").format(ID=ID))
+            else:
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID))
 
         elif re.search("^!quote help$", msg.text):
             if debug:
