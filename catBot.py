@@ -257,7 +257,9 @@ async def on_message(msg: ChatMessage):
                 print("Message is reply. Checking is_super_auth()")
             if not is_super_auth(msg):
                 return
-            command = re.search("^@[A-Za-z_]* !quote( |)(?P<key>!.*$|$)", msg.text)
+            command = re.search("^@[A-Za-z_0-9]* !quote( |)(?P<key>!.*$|$)", msg.text)
+            print(msg.text)
+            print(command)
             if command != None:
                 if debug:
                     print("Reply with command detected.")
@@ -296,12 +298,12 @@ async def on_message(msg: ChatMessage):
             if command != None:
                 await find_quote(None, command.group(1))
 
-        elif re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_]*|) *\"(?P<quote>.*)\"$", msg.text):
+        elif re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *\"(?P<quote>.*)\"$", msg.text):
             if debug:
                 print("Manual !quote detected. Checking super auth")
             if not is_super_auth(msg):
                 return
-            command = re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_]*|) *\"(?P<quote>.*)\"$", msg.text)
+            command = re.search("(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *\"(?P<quote>.*)\"$", msg.text)
             if command.group(4) == "":
                 if debug:
                     print("Empty string detected. Stopping insert.")
@@ -327,7 +329,7 @@ async def on_message(msg: ChatMessage):
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                     return
 
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,category=category,ID=ID,quoter=quoter))
 
             elif command.group(2) != "" and command.group(3) == "":
                 if debug:
@@ -406,7 +408,7 @@ async def on_message(msg: ChatMessage):
                         await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                         return
 
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,category=category,date=date,ID=ID,quoter=quoter))
 
         elif re.search("^!quote$", msg.text):
             await find_quote()
