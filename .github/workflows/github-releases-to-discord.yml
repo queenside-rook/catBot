@@ -15,6 +15,6 @@ jobs:
           color: "2105893"
           username: "catBot on github"
           avatar_url: "https://cdn.discordapp.com/attachments/1287848895954681947/1358850483275698236/Tang.png?ex=6a7f4b21&is=6a7df9a1&hm=96e4f3aba7b99f048a0368daa6d3e961103c9d26a65f07eb55f36aa00bd74633"
-          content: "@catBot"
+          content: "<@&1537515195151155230>"
           footer_title: "Changelog"
           reduce_headings: true
