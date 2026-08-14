@@ -157,9 +157,9 @@ def check_quoted(user_id):
             print("User not found")
         return False
 
-async def find_quote(index=None, key=None, quoted=None, quoter=None):
+async def find_quote(index=None, key=None, quoted=None, quoter=None, username=None):
     if debug:
-        print(f"Finding quote. Inputs: {index}, {key}, {quoted}, {quoter}")
+        print(f"Finding quote. Inputs: {index}, {key}, {quoted}, {quoter}, {username}")
     for data in cur.execute("SELECT count(*) FROM quotes"):
         db_count = data[0]
     if db_count == 0:
@@ -179,6 +179,9 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None):
                 await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
             else:
                 results = results[index]
+        else: 
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_quoted').format(user=username))
+            return
 
     elif quoter != None:
         if check_quoter(quoter):
@@ -191,6 +194,9 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None):
                 await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
             else:
                 results = results[index]
+        else: 
+            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_quoter').format(user=username))
+            return
 
     elif key != None:
         if check_key(key):
@@ -505,8 +511,9 @@ async def on_message(msg: ChatMessage):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoted=user_id)
-            await post_quote(ID, key, date, user, category, quote, quoter)
+            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoted=user_id, username=command.group("user"))
+            if check_quoted(user_id):
+                await post_quote(ID, key, date, user, category, quote, quoter)
 
         elif re.search(r"^!quoter", msg.text):
             command = re.search(r"^!quoter *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text)
@@ -517,8 +524,9 @@ async def on_message(msg: ChatMessage):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoter=user_id)
-            await post_quote(ID, key, date, user, category, quote, quoter)
+            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoter=user_id, username=command.group("user"))
+            if check_quoter(user_id):
+                await post_quote(ID, key, date, user, category, quote, quoter)
 
 def already_running(title, text, style):
     if debug:
