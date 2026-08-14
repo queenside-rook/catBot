@@ -177,6 +177,7 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
                 results = choice(results)
             elif abs(index) > len(results):
                 await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
+                return
             else:
                 results = results[index]
         else: 
@@ -192,6 +193,7 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
                 results = choice(results)
             elif abs(index) > len(results):
                 await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
+                return
             else:
                 results = results[index]
         else: 
