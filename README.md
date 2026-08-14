@@ -13,11 +13,23 @@ A small, simple Twitch chat bot to save and retrieve quotes.
 
 `!quote !key "text"` will do as above but with the given key
 
+`!quote @username "text"` will create a quote attributed to the entered username. The @ is optional
+
+`!quote !key @username "text"` will do as above but with the given key
+
 `!quote ID` will return quote with entered ID
 
 `!quote !key` will return quote with entered key
 
 `!quote -n` will return the (n-1)th quote from most recent, so `!quote -1` returns the most recent quote, `!quote -2` the one before that, etc
+
+`!quoted @username` will return a quote attributed to the entered username. The @ is optional. 
+
+`!quoted @username (-)n` will do as above but it will retrieve the nth quote by that user. Optionally, you can negative index
+
+`!quoter @username` will return a quote quoted by the entered username. The @ is optional. 
+
+`!quoter @username (-)n` will do as above but it will retrieve the nth quote by that user. Optionally, you can negative index
 
 ## Setup
 
