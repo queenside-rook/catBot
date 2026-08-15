@@ -87,7 +87,7 @@ else:
 
 def print_splash():
     if not debug:
-        system("cls" if name == "nt" else "clear")
+        system("cls" if name == "nt" else "clear")  # clears the CLI
         print(splash.title2)
 
 
@@ -371,17 +371,19 @@ async def on_message(msg: ChatMessage):
         if debug:
             print(f"{msg.user.display_name}'s message ignored")
         return
-    if re.search(r"!quote", msg.text) != None:
+    if (
+        re.search(r"!quote", msg.text) != None
+    ):  # checks the message for "!quote" so it can more efficiently ignore messages
         if debug:
             print("!quote detected")
-        if msg.reply_parent_msg_body != None:
+        if msg.reply_parent_msg_body != None:  # checks if message is a reply
             if debug:
                 print("Message is reply. Checking is_super_auth()")
             if not is_super_auth(msg):
                 return
-            command = re.search(r"^@[A-Za-z_0-9]* !quote( |)(?P<key>!.*$|$)", msg.text)
-            print(msg.text)
-            print(command)
+            command = re.search(
+                r"^@[A-Za-z_0-9]* !quote( |)(?P<key>!.*$|$)", msg.text
+            )  # checks message and matches an optional key for the quote
             if command != None:
                 if debug:
                     print("Reply with command detected.")
@@ -390,7 +392,7 @@ async def on_message(msg: ChatMessage):
                 date = datetime.now().strftime("%m/%d/%y")
                 user = msg.reply_parent_user_id
                 category = re.search(
-                    "game_name=(?P<name>.*?),",
+                    r"game_name=(?P<name>.*?),",
                     str(list(await twitch.get_channel_information(channel_id))[0]),
                 ).group("name")
                 quote = msg.reply_parent_msg_body.replace("\\s", " ")
@@ -417,7 +419,9 @@ async def on_message(msg: ChatMessage):
                         ),
                     )
 
-        elif re.search(r"^!quote (?P<number>\d*$)", msg.text) != None:
+        elif (
+            re.search(r"^!quote (?P<number>\d*$)", msg.text) != None
+        ):  # matches !quote followed by a number
             if debug:
                 print("!quote <#> detected")
             command = re.search(r"^!quote (?P<number>\d*$)", msg.text)
@@ -433,7 +437,9 @@ async def on_message(msg: ChatMessage):
                     TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID)
                 )
 
-        elif re.search(r"^!quote (?P<key>![^ ]*$)", msg.text):
+        elif re.search(
+            r"^!quote (?P<key>![^ ]*$)", msg.text
+        ):  # matches !quote followed by a key
             if debug:
                 print("!quote <!key> detected")
             command = re.search(r"^!quote (?P<key>![^ ]*$)", msg.text)
@@ -444,7 +450,7 @@ async def on_message(msg: ChatMessage):
                 await post_quote(ID, key, date, user, category, quote, quoter)
 
         elif re.search(
-            r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$',
+            r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$',  # matches !quote followed by an optional key, an optional @user, and a manually entered "quote"
             msg.text,
         ):
             if debug:
@@ -459,7 +465,9 @@ async def on_message(msg: ChatMessage):
                 if debug:
                     print("Empty string detected. Stopping insert.")
                 return
-            if command.group(2) == "" and command.group(3) == "":
+            if (
+                command.group(2) == "" and command.group(3) == ""
+            ):  # case with no key and no @user
                 if debug:
                     print("No key and no @ detected. Checking auth")
                 if not is_auth(msg):
@@ -501,7 +509,9 @@ async def on_message(msg: ChatMessage):
                         ),
                     )
 
-            elif command.group(2) != "" and command.group(3) == "":
+            elif (
+                command.group(2) != "" and command.group(3) == ""
+            ):  # case with key and no @user
                 if debug:
                     print("Key and no @ detected. Checking auth")
                 if not is_auth(msg):
@@ -546,7 +556,9 @@ async def on_message(msg: ChatMessage):
                             ),
                         )
 
-            elif command.group(2) == "" and command.group(3) != "":
+            elif (
+                command.group(2) == "" and command.group(3) != ""
+            ):  # case with no key and found @user
                 if debug:
                     print("No key and @ found")
                 if not is_auth(msg):
@@ -585,7 +597,9 @@ async def on_message(msg: ChatMessage):
                         ),
                     )
 
-            elif command.group(2) != "" and command.group(3) != "":
+            elif (
+                command.group(2) != "" and command.group(3) != ""
+            ):  # case with found key and found @user
                 if debug:
                     print("Key and @ found")
                 if check_key(command.group(2)):
@@ -643,7 +657,9 @@ async def on_message(msg: ChatMessage):
             ID, key, date, user, category, quote, quoter = await find_quote()
             await post_quote(ID, key, date, user, category, quote, quoter)
 
-        elif re.search(r"^!quote -\d$", msg.text):
+        elif re.search(
+            r"^!quote -\d$", msg.text
+        ):  # matches !quote followed by a negative index
             if debug:
                 print("!quote negative index detected")
             quote_ids = []
@@ -740,10 +756,15 @@ def already_running(title, text, style):
     if debug:
         print("Bot is already running or running.temp did not get removed properly")
     atexit.unregister(exit_script)
-    return ctypes.windll.user32.MessageBoxW(0, text, title, style)
+    return ctypes.windll.user32.MessageBoxW(
+        0,
+        "Error",
+        "Bot already running! If you believe this is in error, delete running.temp",
+        0,
+    )
 
 
-async def stop_loop(option=None):
+async def stop_loop(option=None):  # this function waits for the user to input "stop"
     if debug:
         print("stop_loop() called")
     print_splash()
@@ -830,7 +851,7 @@ async def start_bot():
 
     global ignored_list
     ignored = twitch.get_users(logins=list(tomlset.get("ignore")))
-    bot_id = twitch.get_users()
+    bot_id = twitch.get_users()  # with no argument, this function fetches the ID of the twitch account that's currently authenticated
     async for data in bot_id:
         bot_id = data.id
     ignored_list = []
@@ -1030,7 +1051,7 @@ async def startup_checks():
     if not program_running:
         if debug:
             print("running.temp not found. Creating running.temp")
-        with open("running.temp", "w") as fp:
+        with open("running.temp", "w"):
             pass
         if debug:
             print("Registering exit script")
@@ -1059,11 +1080,7 @@ async def startup_checks():
             print("\nNo cache found. Running cache initializer.\n")
             await initialize_cache()
     else:
-        already_running(
-            "Error",
-            "Bot already running! If you believe this is in error, delete running.temp",
-            0,
-        )
+        already_running()
 
 
 def exit_script():
