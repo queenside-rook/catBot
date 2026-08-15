@@ -31,14 +31,21 @@ else:
 
 if debug:
     print("Setting user scopes")
-USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT, AuthScope.USER_BOT, AuthScope.CHANNEL_BOT]
+USER_SCOPE = [
+    AuthScope.CHAT_READ,
+    AuthScope.CHAT_EDIT,
+    AuthScope.USER_BOT,
+    AuthScope.CHANNEL_BOT,
+]
 
 if debug:
     print("Fetching quotes DB")
 
 con = sql.connect("quotes.db", check_same_thread=False)
 cur = con.cursor()
-cur.execute("CREATE TABLE if NOT EXISTS quotes(ID, key, date, user, category, quote, quoter)")
+cur.execute(
+    "CREATE TABLE if NOT EXISTS quotes(ID, key, date, user, category, quote, quoter)"
+)
 
 try:
     if debug:
@@ -56,38 +63,55 @@ if tomlstr.get("invalid_quoted") == None:
     with open("catBot.toml", "r") as f:
         lines = f.readlines()
 
-    lines.insert(12, 'invalid_quoted = "No quotes from {user} found!" # only takes the variable {user}\n')
-    lines.insert(13, 'invalid_quoter = "No quotes quoted by {user} found!" # only takes the variable {user}\n')
-    lines.append('ignore_shared_chat = false\n')
-    lines.append('repeat_quote_on_save = false # set to true to send the quoted message as if you had used !quote <ID#> instead of just sending the save_success_(un)keyed message')
+    lines.insert(
+        12,
+        'invalid_quoted = "No quotes from {user} found!" # only takes the variable {user}\n',
+    )
+    lines.insert(
+        13,
+        'invalid_quoter = "No quotes quoted by {user} found!" # only takes the variable {user}\n',
+    )
+    lines.append("ignore_shared_chat = false\n")
+    lines.append(
+        "repeat_quote_on_save = false # set to true to send the quoted message as if you had used !quote <ID#> instead of just sending the save_success_(un)keyed message"
+    )
 
     with open("catBot.toml", "w") as f:
         f.writelines(lines)
 
-if debug: 
+if debug:
     input("Checking input: \n")
 else:
     input()
 
+
 def print_splash():
     if not debug:
-        system('cls' if name == 'nt' else 'clear')
+        system("cls" if name == "nt" else "clear")
         print(splash.title2)
+
 
 def get_last_quote():
     if debug:
         print("Getting most recent quote index")
     quote_ids = []
-    for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
+    for ids in cur.execute(
+        "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
+    ):
         quote_ids.append(ids[0])
     return int(quote_ids[-1])
+
 
 def insert_quote(ID, key, date, user, category, quote, quoter):
     if debug:
         print("Inserting quote")
-    cur.execute("""INSERT INTO quotes(id, key, date, user, category, quote, quoter) 
-                    VALUES (?,?,?,?,?,?,?);""", (ID, key, date, user, category, quote, quoter))
+    cur.execute(
+        """INSERT INTO quotes(id, key, date, user, category, quote, quoter) 
+                    VALUES (?,?,?,?,?,?,?);""",
+        (ID, key, date, user, category, quote, quoter),
+    )
     con.commit()
+
 
 def delete_quote(index):
     if debug:
@@ -95,11 +119,13 @@ def delete_quote(index):
     cur.execute("DELETE FROM quotes WHERE id = ?", (index,))
     con.commit()
 
+
 def update_quote(index, new_quote):
     if debug:
         print(f"Updating quote {index} to {new_quote}")
     cur.execute("UPDATE quotes SET quote = ? WHERE id = ?", (new_quote, index))
     con.commit()
+
 
 def check_key(key):
     if debug:
@@ -116,12 +142,15 @@ def check_key(key):
             print("Key not found")
         return False
 
+
 def check_index(index):
     index = int(index)
     if debug:
         print(f"Checking index {index}")
     check = []
-    for indicies in cur.execute("SELECT CAST(id AS INT) FROM quotes WHERE CAST(id AS INT) = ?", (index,)):
+    for indicies in cur.execute(
+        "SELECT CAST(id AS INT) FROM quotes WHERE CAST(id AS INT) = ?", (index,)
+    ):
         check.append(indicies[0])
     if check != []:
         if debug:
@@ -131,6 +160,7 @@ def check_index(index):
         if debug:
             print("Index not found")
         return False
+
 
 def check_quoter(user_id):
     if debug:
@@ -147,6 +177,7 @@ def check_quoter(user_id):
             print("User not found")
         return False
 
+
 def check_quoted(user_id):
     if debug:
         print(f"Checking quoted {user_id}")
@@ -162,6 +193,7 @@ def check_quoted(user_id):
             print("User not found")
         return False
 
+
 async def find_quote(index=None, key=None, quoted=None, quoter=None, username=None):
     if debug:
         print(f"Finding quote. Inputs: {index}, {key}, {quoted}, {quoter}, {username}")
@@ -170,7 +202,7 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
     if db_count == 0:
         if debug:
             print("Database empty")
-        await chat.send_message(TARGET_CHANNEL, tomlstr.get('empty_db'))
+        await chat.send_message(TARGET_CHANNEL, tomlstr.get("empty_db"))
         return
 
     if quoted != None:
@@ -181,12 +213,16 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
             if index == None:
                 results = choice(results)
             elif abs(index) > len(results):
-                await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
+                await chat.send_message(
+                    TARGET_CHANNEL, f"Not enough quotes found for index {index}!"
+                )
                 return
             else:
                 results = results[index]
-        else: 
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_quoted').format(user=username))
+        else:
+            await chat.send_message(
+                TARGET_CHANNEL, tomlstr.get("invalid_quoted").format(user=username)
+            )
             return
 
     elif quoter != None:
@@ -197,12 +233,16 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
             if index == None:
                 results = choice(results)
             elif abs(index) > len(results):
-                await chat.send_message(TARGET_CHANNEL, f"Not enough quotes found for index {index}!")
+                await chat.send_message(
+                    TARGET_CHANNEL, f"Not enough quotes found for index {index}!"
+                )
                 return
             else:
                 results = results[index]
-        else: 
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_quoter').format(user=username))
+        else:
+            await chat.send_message(
+                TARGET_CHANNEL, tomlstr.get("invalid_quoter").format(user=username)
+            )
             return
 
     elif key != None:
@@ -210,22 +250,34 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
             for data in cur.execute("SELECT * FROM quotes WHERE key = ?", (key,)):
                 results = data
         else:
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_key').format(key=key))
+            await chat.send_message(
+                TARGET_CHANNEL, tomlstr.get("invalid_key").format(key=key)
+            )
             return
+
     elif index != None:
         if check_index(index):
-            for data in cur.execute("SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (index,)):
+            for data in cur.execute(
+                "SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (index,)
+            ):
                 results = data
         else:
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_ID').format(ID=index))
+            await chat.send_message(
+                TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=index)
+            )
+
     else:
         quote_ids = []
-        for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
+        for ids in cur.execute(
+            "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
+        ):
             quote_ids.append(ids[0])
         quote_id = choice(quote_ids)
         if debug:
             print("Finding random quote")
-        for data in cur.execute("SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (quote_id,)):
+        for data in cur.execute(
+            "SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (quote_id,)
+        ):
             results = data
 
     user = twitch.get_users(str(results[3]))
@@ -244,25 +296,40 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
 
     return ID, key, date, user, category, quote, quoter
 
+
 async def post_quote(ID, key, date, user, category, quote, quoter):
     if key != "":
         if debug:
             print("Sending keyed chat message")
         await chat.send_message(TARGET_CHANNEL, quote)
-        await chat.send_message(TARGET_CHANNEL, tomlstr.get("keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter,category=category))
+        await chat.send_message(
+            TARGET_CHANNEL,
+            tomlstr.get("keyed").format(
+                key=key, user=user, date=date, ID=ID, quoter=quoter, category=category
+            ),
+        )
     else:
         if debug:
             print("No key. Sending unkeyed chat message")
         await chat.send_message(TARGET_CHANNEL, quote)
-        await chat.send_message(TARGET_CHANNEL, tomlstr.get("unkeyed").format(user=user,date=date,ID=ID,quoter=quoter,category=category))
+        await chat.send_message(
+            TARGET_CHANNEL,
+            tomlstr.get("unkeyed").format(
+                user=user, date=date, ID=ID, quoter=quoter, category=category
+            ),
+        )
 
 
 def is_auth(msg):
-    if tomlset.get("vip_only") and not (msg.user.vip or msg.user.mod or msg.user.id == channel_id):
+    if tomlset.get("vip_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.id == channel_id
+    ):
         if debug:
             print("Auth failed due to vip_only")
         return False
-    elif tomlset.get("subs_only") and not (msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id):
+    elif tomlset.get("subs_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id
+    ):
         if debug:
             print("Auth failed due to subs_only")
         return False
@@ -271,12 +338,17 @@ def is_auth(msg):
             print("Passed auth")
         return True
 
+
 def is_super_auth(msg):
-    if tomlset.get("super_vip_only") and not (msg.user.vip or msg.user.mod or msg.user.id == channel_id):
+    if tomlset.get("super_vip_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.id == channel_id
+    ):
         if debug:
             print("Auth failed due to super_vip_only")
         return False
-    elif tomlset.get("super_subs_only") and not (msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id):
+    elif tomlset.get("super_subs_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.subscriber or msg.user.id == channel_id
+    ):
         if debug:
             print("Auth failed due to super_subs_only")
         return False
@@ -285,10 +357,12 @@ def is_super_auth(msg):
             print("Passed super auth")
         return True
 
+
 async def on_ready(ready_event: EventData):
     if debug:
         print("Bot is ready and joining chat rooms")
     await ready_event.chat.join_room(TARGET_CHANNEL)
+
 
 async def on_message(msg: ChatMessage):
     if debug:
@@ -315,7 +389,10 @@ async def on_message(msg: ChatMessage):
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
                 user = msg.reply_parent_user_id
-                category = re.search('game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
+                category = re.search(
+                    "game_name=(?P<name>.*?),",
+                    str(list(await twitch.get_channel_information(channel_id))[0]),
+                ).group("name")
                 quote = msg.reply_parent_msg_body.replace("\\s", " ")
                 quoter = msg.user.id
                 insert_quote(ID, key, date, user, category, quote, quoter)
@@ -323,40 +400,61 @@ async def on_message(msg: ChatMessage):
                 if re.search(r"^!quote", quote):
                     if debug:
                         print("Cannot save quotes beginning with !quote")
-                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    await chat.send_message(
+                        TARGET_CHANNEL, 'Cannot save quotes beginning with "!quote"'
+                    )
                     return
                 if tomlset.get("repeat_quote_on_save"):
-                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    ID, key, date, user, category, quote, quoter = await find_quote(
+                        get_last_quote()
+                    )
                     await post_quote(ID, key, date, user, category, quote, quoter)
                 else:
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(
+                        TARGET_CHANNEL,
+                        tomlstr.get("save_success_unkeyed").format(
+                            user=user, date=date, ID=ID, quoter=quoter
+                        ),
+                    )
 
         elif re.search(r"^!quote (?P<number>\d*$)", msg.text) != None:
             if debug:
                 print("!quote <#> detected")
             command = re.search(r"^!quote (?P<number>\d*$)", msg.text)
             if command != None and check_index(command.group(1)):
-                ID, key, date, user, category, quote, quoter = await find_quote(int(command.group(1)))
+                ID, key, date, user, category, quote, quoter = await find_quote(
+                    int(command.group(1))
+                )
                 await post_quote(ID, key, date, user, category, quote, quoter)
             else:
                 ID = command.group(1)
 
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID))
+                await chat.send_message(
+                    TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID)
+                )
 
         elif re.search(r"^!quote (?P<key>![^ ]*$)", msg.text):
             if debug:
                 print("!quote <!key> detected")
             command = re.search(r"^!quote (?P<key>![^ ]*$)", msg.text)
             if command != None:
-                ID, key, date, user, category, quote, quoter = await find_quote(int(command.group(1)))
+                ID, key, date, user, category, quote, quoter = await find_quote(
+                    int(command.group(1))
+                )
                 await post_quote(ID, key, date, user, category, quote, quoter)
 
-        elif re.search(r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$', msg.text):
+        elif re.search(
+            r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$',
+            msg.text,
+        ):
             if debug:
                 print("Manual !quote detected. Checking super auth")
             if not is_super_auth(msg):
                 return
-            command = re.search(r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$', msg.text)
+            command = re.search(
+                r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$',
+                msg.text,
+            )
             if command.group(4) == "":
                 if debug:
                     print("Empty string detected. Stopping insert.")
@@ -373,19 +471,35 @@ async def on_message(msg: ChatMessage):
                     user = channel_id
                 else:
                     user = msg.source_room_id
-                category = re.search(r'game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
+                category = re.search(
+                    r"game_name=(?P<name>.*?),",
+                    str(list(await twitch.get_channel_information(channel_id))[0]),
+                ).group("name")
                 quote = command.group(4)
                 quoter = msg.user.id
                 insert_quote(ID, key, date, user, category, quote, quoter)
                 ID = get_last_quote()
                 if re.search(r"^!quote", quote):
-                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    await chat.send_message(
+                        TARGET_CHANNEL, 'Cannot save quotes beginning with "!quote"'
+                    )
                     return
                 if tomlset.get("repeat_quote_on_save"):
-                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    ID, key, date, user, category, quote, quoter = await find_quote(
+                        get_last_quote()
+                    )
                     await post_quote(ID, key, date, user, category, quote, quoter)
                 else:
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,category=category,ID=ID,quoter=quoter))
+                    await chat.send_message(
+                        TARGET_CHANNEL,
+                        tomlstr.get("save_success_unkeyed").format(
+                            user=user,
+                            date=date,
+                            category=category,
+                            ID=ID,
+                            quoter=quoter,
+                        ),
+                    )
 
             elif command.group(2) != "" and command.group(3) == "":
                 if debug:
@@ -395,7 +509,9 @@ async def on_message(msg: ChatMessage):
                 if check_key(command.group(2)):
                     key = command.group(2)
 
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key))
+                    await chat.send_message(
+                        TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key)
+                    )
                 else:
                     ID = get_last_quote() + 1
                     key = command.group(2)
@@ -404,19 +520,31 @@ async def on_message(msg: ChatMessage):
                         user = channel_id
                     else:
                         user = msg.source_room_id
-                    category = re.search(r'game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
+                    category = re.search(
+                        r"game_name=(?P<name>.*?),",
+                        str(list(await twitch.get_channel_information(channel_id))[0]),
+                    ).group("name")
                     quote = command.group(4)
                     quoter = msg.user.id
                     insert_quote(ID, key, date, user, category, quote, quoter)
                     ID = get_last_quote()
                     if re.search(r"^!quote", quote):
-                        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                        await chat.send_message(
+                            TARGET_CHANNEL, 'Cannot save quotes beginning with "!quote"'
+                        )
                         return
                     if tomlset.get("repeat_quote_on_save"):
-                        ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                        ID, key, date, user, category, quote, quoter = await find_quote(
+                            get_last_quote()
+                        )
                         await post_quote(ID, key, date, user, category, quote, quoter)
                     else:
-                        await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                        await chat.send_message(
+                            TARGET_CHANNEL,
+                            tomlstr.get("save_success_keyed").format(
+                                key=key, user=user, date=date, ID=ID, quoter=quoter
+                            ),
+                        )
 
             elif command.group(2) == "" and command.group(3) != "":
                 if debug:
@@ -426,24 +554,36 @@ async def on_message(msg: ChatMessage):
                 ID = get_last_quote() + 1
                 key = command.group(2)
                 date = datetime.now().strftime("%m/%d/%y")
-                user = command.group(3).replace("@","")
+                user = command.group(3).replace("@", "")
                 user = twitch.get_users(None, user)
                 async for document in user:
                     user = document
                 user = user.id
-                category = re.search(r'game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
+                category = re.search(
+                    r"game_name=(?P<name>.*?),",
+                    str(list(await twitch.get_channel_information(channel_id))[0]),
+                ).group("name")
                 quote = command.group(4)
                 quoter = msg.user.id
                 insert_quote(ID, key, date, user, category, quote, quoter)
                 ID = get_last_quote()
                 if re.search(r"^!quote", quote):
-                    await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                    await chat.send_message(
+                        TARGET_CHANNEL, 'Cannot save quotes beginning with "!quote"'
+                    )
                     return
                 if tomlset.get("repeat_quote_on_save"):
-                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    ID, key, date, user, category, quote, quoter = await find_quote(
+                        get_last_quote()
+                    )
                     await post_quote(ID, key, date, user, category, quote, quoter)
                 else:
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(
+                        TARGET_CHANNEL,
+                        tomlstr.get("save_success_unkeyed").format(
+                            user=user, date=date, ID=ID, quoter=quoter
+                        ),
+                    )
 
             elif command.group(2) != "" and command.group(3) != "":
                 if debug:
@@ -451,29 +591,51 @@ async def on_message(msg: ChatMessage):
                 if check_key(command.group(2)):
                     key = command.group(2)
 
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("key_exists").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    await chat.send_message(
+                        TARGET_CHANNEL,
+                        tomlstr.get("key_exists").format(
+                            key=key, user=user, date=date, ID=ID, quoter=quoter
+                        ),
+                    )
                 else:
                     ID = get_last_quote() + 1
                     key = command.group(2)
                     date = datetime.now().strftime("%m/%d/%y")
-                    user = command.group(3).replace("@","")
+                    user = command.group(3).replace("@", "")
                     user = twitch.get_users(None, user)
                     async for document in user:
                         user = document
                     user = user.id
-                    category = re.search(r'game_name=(?P<name>.*?),', str(list(await twitch.get_channel_information(channel_id))[0])).group('name')
+                    category = re.search(
+                        r"game_name=(?P<name>.*?),",
+                        str(list(await twitch.get_channel_information(channel_id))[0]),
+                    ).group("name")
                     quote = command.group(4)
                     quoter = msg.user.id
                     insert_quote(ID, key, date, user, category, quote, quoter)
                     ID = get_last_quote()
                     if re.search(r"^!quote", quote):
-                        await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
+                        await chat.send_message(
+                            TARGET_CHANNEL, 'Cannot save quotes beginning with "!quote"'
+                        )
                         return
                     if tomlset.get("repeat_quote_on_save"):
-                        ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                        ID, key, date, user, category, quote, quoter = await find_quote(
+                            get_last_quote()
+                        )
                         await post_quote(ID, key, date, user, category, quote, quoter)
                     else:
-                        await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,category=category,date=date,ID=ID,quoter=quoter))
+                        await chat.send_message(
+                            TARGET_CHANNEL,
+                            tomlstr.get("save_success_keyed").format(
+                                key=key,
+                                user=user,
+                                category=category,
+                                date=date,
+                                ID=ID,
+                                quoter=quoter,
+                            ),
+                        )
 
         elif re.search(r"^!quote$", msg.text):
             if debug:
@@ -485,15 +647,21 @@ async def on_message(msg: ChatMessage):
             if debug:
                 print("!quote negative index detected")
             quote_ids = []
-            for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
+            for ids in cur.execute(
+                "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
+            ):
                 quote_ids.append(ids[0])
             if int(re.search(r"-(\d)", msg.text).group(1)) > len(quote_ids):
                 if debug:
                     print("Index too large")
-                await chat.send_message(TARGET_CHANNEL, "Requested negative index is too large!")
+                await chat.send_message(
+                    TARGET_CHANNEL, "Requested negative index is too large!"
+                )
             else:
                 quote_id = quote_ids[int(re.search(r"(-\d)", msg.text).group(1))]
-                ID, key, date, user, category, quote, quoter = await find_quote(index=quote_id)
+                ID, key, date, user, category, quote, quoter = await find_quote(
+                    index=quote_id
+                )
                 await post_quote(ID, key, date, user, category, quote, quoter)
 
         elif re.search(r"^!quote delete \d$", msg.text):
@@ -504,7 +672,9 @@ async def on_message(msg: ChatMessage):
             delete_quote(int(re.search(r"^!quote delete (\d$)", msg.text).group(1)))
             ID = re.search(r"^!quote delete (\d$)", msg.text).group(1)
 
-            await chat.send_message(TARGET_CHANNEL, tomlstr.get("delete_success").format(ID=ID))
+            await chat.send_message(
+                TARGET_CHANNEL, tomlstr.get("delete_success").format(ID=ID)
+            )
 
         elif re.search(r'^!quote update (\d) "(.*)"', msg.text):
             command = re.search(r'^!quote update (\d) "(.*)"', msg.text)
@@ -515,17 +685,26 @@ async def on_message(msg: ChatMessage):
             if check_index(int(command.group(1))):
                 update_quote(int(command.group(1)), command.group(2))
                 ID = command.group(1)
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("update_success").format(ID=ID))
+                await chat.send_message(
+                    TARGET_CHANNEL, tomlstr.get("update_success").format(ID=ID)
+                )
             else:
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID))
+                await chat.send_message(
+                    TARGET_CHANNEL, tomlstr.get("invalid_ID").format(ID=ID)
+                )
 
         elif re.search(r"^!quote help$", msg.text):
             if debug:
                 print("!quote help detected")
-            await chat.send_message(TARGET_CHANNEL, "Find out how to use !quote at https://github.com/queenside-rook/catBot/blob/main/README.md")
+            await chat.send_message(
+                TARGET_CHANNEL,
+                "Find out how to use !quote at https://github.com/queenside-rook/catBot/blob/main/README.md",
+            )
 
         elif re.search(r"^!quoted", msg.text):
-            command = re.search(r"^!quoted *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text)
+            command = re.search(
+                r"^!quoted *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text
+            )
             user_id = twitch.get_users(logins=command.group("user"))
             async for data in user_id:
                 user_id = data.id
@@ -533,12 +712,16 @@ async def on_message(msg: ChatMessage):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoted=user_id, username=command.group("user"))
+            ID, key, date, user, category, quote, quoter = await find_quote(
+                index=index, quoted=user_id, username=command.group("user")
+            )
             if check_quoted(user_id):
                 await post_quote(ID, key, date, user, category, quote, quoter)
 
         elif re.search(r"^!quoter", msg.text):
-            command = re.search(r"^!quoter *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text)
+            command = re.search(
+                r"^!quoter *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text
+            )
             user_id = twitch.get_users(logins=command.group("user"))
             async for data in user_id:
                 user_id = data.id
@@ -546,9 +729,12 @@ async def on_message(msg: ChatMessage):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            ID, key, date, user, category, quote, quoter = await find_quote(index=index, quoter=user_id, username=command.group("user"))
+            ID, key, date, user, category, quote, quoter = await find_quote(
+                index=index, quoter=user_id, username=command.group("user")
+            )
             if check_quoter(user_id):
                 await post_quote(ID, key, date, user, category, quote, quoter)
+
 
 def already_running(title, text, style):
     if debug:
@@ -556,11 +742,14 @@ def already_running(title, text, style):
     atexit.unregister(exit_script)
     return ctypes.windll.user32.MessageBoxW(0, text, title, style)
 
+
 async def stop_loop(option=None):
     if debug:
         print("stop_loop() called")
     print_splash()
-    print(f'\nBot is running on channel {TARGET_CHANNEL}. Type STOP to stop the quote bot.\n')
+    print(
+        f"\nBot is running on channel {TARGET_CHANNEL}. Type STOP to stop the quote bot.\n"
+    )
     if option == None:
         option = input().lower()
     if option == "stop":
@@ -573,6 +762,7 @@ async def stop_loop(option=None):
         input()
         await stop_loop()
 
+
 async def start_bot():
     if debug:
         print("start_bot() called")
@@ -584,25 +774,32 @@ async def start_bot():
     global TARGET_CHANNEL
     global channel_id
 
-    APP_ID, APP_SECRET, TARGET_CHANNEL = bot_data.get("APP_ID"), bot_data.get("APP_SECRET"), bot_data.get("TARGET_CHANNEL")
+    APP_ID, APP_SECRET, TARGET_CHANNEL = (
+        bot_data.get("APP_ID"),
+        bot_data.get("APP_SECRET"),
+        bot_data.get("TARGET_CHANNEL"),
+    )
     twitch = await Twitch(APP_ID, APP_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
-    
+
     if debug:
         print("Checking for refresh token")
     if twitch_data.get("refresh_token") != "":
         if debug:
             print("Token found.")
-        token, refresh_token = twitch_data.get("token"), twitch_data.get("refresh_token")
+        token, refresh_token = (
+            twitch_data.get("token"),
+            twitch_data.get("refresh_token"),
+        )
     else:
         if debug:
             print("Token not found. Opening browser to fetch tokens")
         token, refresh_token = await auth.authenticate()
         if debug:
             print("Saving tokens to encrypted db")
-        cache_db.update({'Twitch Tokens' : {
-            'token' : token,
-            'refresh_token' : refresh_token }})
+        cache_db.update(
+            {"Twitch Tokens": {"token": token, "refresh_token": refresh_token}}
+        )
 
     try:
         if debug:
@@ -614,9 +811,9 @@ async def start_bot():
         token, refresh_token = await auth.authenticate()
         if debug:
             print("Saving token to encrypted db")
-        cache_db.update({'Twitch Tokens' : {
-            'token' : token,
-            'refresh_token' : refresh_token }})
+        cache_db.update(
+            {"Twitch Tokens": {"token": token, "refresh_token": refresh_token}}
+        )
         try:
             if debug:
                 print("Re-attempting user authentication")
@@ -655,25 +852,29 @@ async def start_bot():
 
     await stop_loop()
 
+
 async def initialize_cache():
     if debug:
         print("Initializing cache")
     print_splash()
-    KEY = input('Desired password: ')
-    PATH = 'cache.encrypted_db'
+    KEY = input("Desired password: ")
+    PATH = "cache.encrypted_db"
     cache_db = TinyDB(encryption_key=KEY, path=PATH, storage=tae.EncryptedJSONStorage)
-    APP_ID = input('Input Twitch App Client ID: ')
-    APP_SECRET = input('Input Twitch App Client Secret: ')
-    TARGET_CHANNEL = input('Channel for bot to operate in: ')
+    APP_ID = input("Input Twitch App Client ID: ")
+    APP_SECRET = input("Input Twitch App Client Secret: ")
+    TARGET_CHANNEL = input("Channel for bot to operate in: ")
     if debug:
         print("Inserting data into encrypted db")
-    cache_db.insert({'Bot Info' : {
-        'APP_ID' : APP_ID.replace("\n", ""),
-        'APP_SECRET' : APP_SECRET.replace("\n", ""),
-        'TARGET_CHANNEL' : TARGET_CHANNEL.replace("\n", "") }})
-    cache_db.insert({'Twitch Tokens' : {
-            'token' : '',
-            'refresh_token' : '' }})
+    cache_db.insert(
+        {
+            "Bot Info": {
+                "APP_ID": APP_ID.replace("\n", ""),
+                "APP_SECRET": APP_SECRET.replace("\n", ""),
+                "TARGET_CHANNEL": TARGET_CHANNEL.replace("\n", ""),
+            }
+        }
+    )
+    cache_db.insert({"Twitch Tokens": {"token": "", "refresh_token": ""}})
     exit_script()
     if debug:
         print("Beginning startup_checks()")
@@ -685,25 +886,34 @@ def get_cache():
         print("Fetching encrypted cache")
     global cache_db
     print_splash()
-    KEY = input('\nPassword: ')
-    if KEY == '':
+    KEY = input("\nPassword: ")
+    if KEY == "":
         cache_db = False
     try:
         if debug:
             print("Trying password")
-        cache_db = TinyDB(encryption_key=KEY, path='cache.encrypted_db', storage=tae.EncryptedJSONStorage)
+        cache_db = TinyDB(
+            encryption_key=KEY,
+            path="cache.encrypted_db",
+            storage=tae.EncryptedJSONStorage,
+        )
     except ValueError:
         print("Invalid password!")
         get_cache()
+
 
 async def user_input():
     if debug:
         print("Starting main menu")
     print_splash()
-    print("\nType START to start the quote bot. If this is your first time running the program, start here.")
+    print(
+        "\nType START to start the quote bot. If this is your first time running the program, start here."
+    )
     print("Type EXIT to exit.")
     print("Type CHANGEPASS to change your password.")
-    print("Type CHANGEBOT to change your Client ID and Client Secret or your Target Channel.\n")
+    print(
+        "Type CHANGEBOT to change your Client ID and Client Secret or your Target Channel.\n"
+    )
     option = input().lower()
     if option == "start":
         if debug:
@@ -719,18 +929,24 @@ async def user_input():
             print("Changepass chosen")
         print_splash()
         try:
-            password = input('\nEnter current password: ')
-            cache_db = TinyDB(encryption_key=password, path='cache.encrypted_db', storage=tae.EncryptedJSONStorage)
+            password = input("\nEnter current password: ")
+            cache_db = TinyDB(
+                encryption_key=password,
+                path="cache.encrypted_db",
+                storage=tae.EncryptedJSONStorage,
+            )
             if debug:
                 print("Checking password.")
             cache_db.all()
-            new_pass = input('\nEnter new password: ')
+            new_pass = input("\nEnter new password: ")
             cache_db.storage.change_encryption_key(new_pass)
             print("\n\033[92mNew password saved. Press ENTER to continue.\033[0m\n")
             input()
             await user_input()
         except ValueError:
-            print("\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n")
+            print(
+                "\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n"
+            )
             input()
             await user_input()
     elif option == "changebot":
@@ -738,41 +954,67 @@ async def user_input():
             print("Changebot chosen")
         print_splash()
         try:
-            password = input('\nEnter password: ')
-            cache_db = TinyDB(encryption_key=password, path='cache.encrypted_db', storage=tae.EncryptedJSONStorage)
+            password = input("\nEnter password: ")
+            cache_db = TinyDB(
+                encryption_key=password,
+                path="cache.encrypted_db",
+                storage=tae.EncryptedJSONStorage,
+            )
             if debug:
                 print("Checking password")
             cache_db.all()
-            option = input("\nEnter APP to change Twitch App information. Enter CHANNEL to change target channel.\n\n").lower()
+            option = input(
+                "\nEnter APP to change Twitch App information. Enter CHANNEL to change target channel.\n\n"
+            ).lower()
             if option == "app":
                 if debug:
                     print("App chosen")
-                APP_ID = input('Input Twitch App Client ID: ')
-                APP_SECRET = input('Input Twitch App Client Secret: ')
+                APP_ID = input("Input Twitch App Client ID: ")
+                APP_SECRET = input("Input Twitch App Client Secret: ")
                 if debug:
                     print("Updating data in encrypted db")
-                cache_db.update({ 'Bot Info' : {
-                    'APP_ID' : APP_ID.replace("\n", ""),
-                    'APP_SECRET' : APP_SECRET.replace("\n", ""),
-                    'TARGET_CHANNEL' : cache_db.get(doc_id=1).get('Bot Info').get("TARGET_CHANNEL")}}, doc_ids=[1])
+                cache_db.update(
+                    {
+                        "Bot Info": {
+                            "APP_ID": APP_ID.replace("\n", ""),
+                            "APP_SECRET": APP_SECRET.replace("\n", ""),
+                            "TARGET_CHANNEL": cache_db.get(doc_id=1)
+                            .get("Bot Info")
+                            .get("TARGET_CHANNEL"),
+                        }
+                    },
+                    doc_ids=[1],
+                )
                 print("\n\033[92mUpdate successful. Press ENTER to continue.\033[0m")
                 input()
                 await user_input()
             elif option == "channel":
                 if debug:
                     print("Channel chosen")
-                TARGET_CHANNEL = input('Channel for bot to operate in: ')
+                TARGET_CHANNEL = input("Channel for bot to operate in: ")
                 if debug:
                     print("Updating data in encrypted db")
-                cache_db.update({ 'Bot Info' : {
-                    'APP_ID' : cache_db.get(doc_id=1).get('Bot Info').get("APP_ID"),
-                    'APP_SECRET' : cache_db.get(doc_id=1).get('Bot Info').get("APP_SECRET"),
-                    'TARGET_CHANNEL' : TARGET_CHANNEL}}, doc_ids=[1])
+                cache_db.update(
+                    {
+                        "Bot Info": {
+                            "APP_ID": cache_db.get(doc_id=1)
+                            .get("Bot Info")
+                            .get("APP_ID"),
+                            "APP_SECRET": cache_db.get(doc_id=1)
+                            .get("Bot Info")
+                            .get("APP_SECRET"),
+                            "TARGET_CHANNEL": TARGET_CHANNEL,
+                        }
+                    },
+                    doc_ids=[1],
+                )
                 print("\n\033[92mUpdate successful. Press ENTER to continue.\033[0m")
                 input()
                 await user_input()
         except ValueError:
-            print("\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n")
+            print(
+                "\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n"
+            )
             input()
             await user_input()
     else:
@@ -780,21 +1022,22 @@ async def user_input():
         input()
         await user_input()
 
+
 async def startup_checks():
     if debug:
         print("startup_checks() called. Checking for running.temp")
-    program_running = path.isfile('running.temp')
+    program_running = path.isfile("running.temp")
     if not program_running:
         if debug:
             print("running.temp not found. Creating running.temp")
-        with open('running.temp', 'w') as fp:
+        with open("running.temp", "w") as fp:
             pass
         if debug:
             print("Registering exit script")
         atexit.register(exit_script)
         if debug:
             print("Looking for encrypted cache")
-        if path.isfile('cache.encrypted_db'):
+        if path.isfile("cache.encrypted_db"):
             if debug:
                 print("Found cache.")
             get_cache()
@@ -802,8 +1045,8 @@ async def startup_checks():
                 try:
                     global bot_data
                     global twitch_data
-                    bot_data = cache_db.get(doc_id=1).get('Bot Info')
-                    twitch_data = cache_db.get(doc_id=2).get('Twitch Tokens')
+                    bot_data = cache_db.get(doc_id=1).get("Bot Info")
+                    twitch_data = cache_db.get(doc_id=2).get("Twitch Tokens")
                     if debug:
                         print("Globals bot_data and twitch_data set. Starting bot")
                     await start_bot()
@@ -816,7 +1059,12 @@ async def startup_checks():
             print("\nNo cache found. Running cache initializer.\n")
             await initialize_cache()
     else:
-        already_running('Error', 'Bot already running! If you believe this is in error, delete running.temp', 0)
+        already_running(
+            "Error",
+            "Bot already running! If you believe this is in error, delete running.temp",
+            0,
+        )
+
 
 def exit_script():
     try:
@@ -827,6 +1075,7 @@ def exit_script():
         if debug:
             print("running.temp delete attempted, file not found")
         return
+
 
 if debug:
     print("Starting...")
