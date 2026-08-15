@@ -59,6 +59,18 @@ except FileNotFoundError:
     with open("catBot.toml", mode="w") as fp:
         fp.write(toml_string.toml_string)
 
+if tomlstr.get("invalid_quoted") == None:
+    with open("catBot.toml", "r") as f:
+        lines = f.readlines()
+
+    lines.insert(12, 'invalid_quoted = "No quotes from {user} found!" # only takes the variable {user}\n')
+    lines.insert(13, 'invalid_quoter = "No quotes quoted by {user} found!" # only takes the variable {user}\n')
+    lines.append('ignore_shared_chat = false\n')
+    lines.append('repeat_quote_on_save = false # set to true to send the quoted message as if you had used !quote <ID#> instead of just sending the save_success_(un)keyed message')
+
+    with open("catBot.toml", "w") as f:
+        f.writelines(lines)
+
 if debug: 
     input("Checking input: \n")
 else:
@@ -75,7 +87,7 @@ def get_last_quote():
     quote_ids = []
     for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
         quote_ids.append(ids[0])
-    return quote_ids[-1]
+    return int(quote_ids[-1])
 
 def insert_quote(ID, key, date, user, category, quote, quoter):
     if debug:
@@ -320,8 +332,11 @@ async def on_message(msg: ChatMessage):
                         print("Cannot save quotes beginning with !quote")
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                     return
-
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                if tomlset.get("repeat_quote_on_save"):
+                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    await post_quote(ID, key, date, user, category, quote, quoter)
+                else:
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
         elif re.search(r"^!quote (?P<number>\d*$)", msg.text) != None:
             if debug:
@@ -373,8 +388,11 @@ async def on_message(msg: ChatMessage):
                 if re.search(r"^!quote", quote):
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                     return
-
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,category=category,ID=ID,quoter=quoter))
+                if tomlset.get("repeat_quote_on_save"):
+                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    await post_quote(ID, key, date, user, category, quote, quoter)
+                else:
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,category=category,ID=ID,quoter=quoter))
 
             elif command.group(2) != "" and command.group(3) == "":
                 if debug:
@@ -401,8 +419,11 @@ async def on_message(msg: ChatMessage):
                     if re.search(r"^!quote", quote):
                         await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                         return
-
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
+                    if tomlset.get("repeat_quote_on_save"):
+                        ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                        await post_quote(ID, key, date, user, category, quote, quoter)
+                    else:
+                        await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,date=date,ID=ID,quoter=quoter))
 
             elif command.group(2) == "" and command.group(3) != "":
                 if debug:
@@ -425,8 +446,11 @@ async def on_message(msg: ChatMessage):
                 if re.search(r"^!quote", quote):
                     await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                     return
-
-                await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
+                if tomlset.get("repeat_quote_on_save"):
+                    ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                    await post_quote(ID, key, date, user, category, quote, quoter)
+                else:
+                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_unkeyed").format(user=user,date=date,ID=ID,quoter=quoter))
 
             elif command.group(2) != "" and command.group(3) != "":
                 if debug:
@@ -452,8 +476,11 @@ async def on_message(msg: ChatMessage):
                     if re.search(r"^!quote", quote):
                         await chat.send_message(TARGET_CHANNEL, 'Cannot save quotes beginning with \"!quote\"')
                         return
-
-                    await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,category=category,date=date,ID=ID,quoter=quoter))
+                    if tomlset.get("repeat_quote_on_save"):
+                        ID, key, date, user, category, quote, quoter = await find_quote(get_last_quote())
+                        await post_quote(ID, key, date, user, category, quote, quoter)
+                    else:
+                        await chat.send_message(TARGET_CHANNEL, tomlstr.get("save_success_keyed").format(key=key,user=user,category=category,date=date,ID=ID,quoter=quoter))
 
         elif re.search(r"^!quote$", msg.text):
             if debug:
