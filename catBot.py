@@ -1,30 +1,23 @@
-from twitchAPI.twitch import Twitch
-import twitchAPI.helper
-from twitchAPI.oauth import UserAuthenticator
-from twitchAPI.type import AuthScope, ChatEvent
-from twitchAPI.chat import Chat, EventData, ChatMessage
-
-import ctypes
-from os import access, path, remove, system, name
-import atexit
-
-import json
-import tomllib
-import re
-from random import choice
-from datetime import datetime
-
-from tinydb import TinyDB, Query
-import tinydb_encrypted_jsonstorage as tae
+import argparse
 import asyncio
+import atexit
+import ctypes
+import re
 import sqlite3 as sql
+from datetime import datetime
+from os import name, path, remove, system
+from random import choice
+
+import tinydb_encrypted_jsonstorage as tae
+import tomllib
+from tinydb import TinyDB
+from twitchAPI.chat import Chat, ChatMessage, EventData
+from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.twitch import Twitch
+from twitchAPI.type import AuthScope, ChatEvent, InvalidTokenException
 
 import splash
 import toml_string
-
-import sys
-
-import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true")
@@ -506,7 +499,7 @@ async def on_message(msg: ChatMessage):
         elif re.search(r"^!quote delete \d$", msg.text):
             if debug:
                 print("!quote delete detected")
-            if not msg.user.mod and not msg.user.id == channel_id:
+            if not msg.user.mod and msg.user.id != channel_id:
                 return
             delete_quote(int(re.search(r"^!quote delete (\d$)", msg.text).group(1)))
             ID = re.search(r"^!quote delete (\d$)", msg.text).group(1)
@@ -517,7 +510,7 @@ async def on_message(msg: ChatMessage):
             command = re.search(r'^!quote update (\d) "(.*)"', msg.text)
             if debug:
                 print("!quote update detected")
-            if not msg.user.mod and not msg.user.id == channel_id:
+            if not msg.user.mod and msg.user.id != channel_id:
                 return
             if check_index(int(command.group(1))):
                 update_quote(int(command.group(1)), command.group(2))
@@ -615,7 +608,7 @@ async def start_bot():
         if debug:
             print("Setting user authentication.")
         await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
-    except Exception:
+    except InvalidTokenException:
         if debug:
             print("Tokens invalid. Fetching new tokens.")
         token, refresh_token = await auth.authenticate()
@@ -628,9 +621,8 @@ async def start_bot():
             if debug:
                 print("Re-attempting user authentication")
             await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
-        except Exception as e:
+        except InvalidTokenException:
             print("Unrecoverable error.")
-            print(e)
     if debug:
         print("Setting chat instance")
     chat = await Chat(twitch, no_shared_chat_messages=tomlset.get("ignore_shared_chat"))
@@ -651,7 +643,7 @@ async def start_bot():
     if not tomlset.get("using_bot"):
         try:
             ignored_list.remove(bot_id)
-        except Exception:
+        except ValueError:
             pass
     if debug:
         print("Registering events")
@@ -810,8 +802,6 @@ async def startup_checks():
                 try:
                     global bot_data
                     global twitch_data
-                    bot = 'APP_ID'
-                    twitch_tokens = 'Twitch Tokens'
                     bot_data = cache_db.get(doc_id=1).get('Bot Info')
                     twitch_data = cache_db.get(doc_id=2).get('Twitch Tokens')
                     if debug:
