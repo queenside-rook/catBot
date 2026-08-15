@@ -85,7 +85,7 @@ def get_last_quote():
     if debug:
         print("Getting most recent quote index")
     quote_ids = []
-    for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+    for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
         quote_ids.append(ids[0])
     return int(quote_ids[-1])
 
@@ -128,7 +128,7 @@ def check_index(index):
     if debug:
         print(f"Checking index {index}")
     check = []
-    for indicies in cur.execute("SELECT id FROM quotes WHERE id = ?", (index,)):
+    for indicies in cur.execute("SELECT CAST(id AS INT) FROM quotes WHERE CAST(id AS INT) = ?", (index,)):
         check.append(indicies[0])
     if check != []:
         if debug:
@@ -221,18 +221,18 @@ async def find_quote(index=None, key=None, quoted=None, quoter=None, username=No
             return
     elif index != None:
         if check_index(index):
-            for data in cur.execute("SELECT * FROM quotes WHERE id = ?", (index,)):
+            for data in cur.execute("SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (index,)):
                 results = data
         else:
             await chat.send_message(TARGET_CHANNEL, tomlstr.get('invalid_ID').format(ID=index))
     else:
         quote_ids = []
-        for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+        for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
             quote_ids.append(ids[0])
         quote_id = choice(quote_ids)
         if debug:
             print("Finding random quote")
-        for data in cur.execute("SELECT * FROM quotes WHERE id = ?", (quote_id,)):
+        for data in cur.execute("SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (quote_id,)):
             results = data
 
     user = twitch.get_users(str(results[3]))
@@ -492,7 +492,7 @@ async def on_message(msg: ChatMessage):
             if debug:
                 print("!quote negative index detected")
             quote_ids = []
-            for ids in cur.execute("SELECT ID FROM quotes ORDER BY ID"):
+            for ids in cur.execute("SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"):
                 quote_ids.append(ids[0])
             if int(re.search(r"-(\d)", msg.text).group(1)) > len(quote_ids):
                 if debug:
