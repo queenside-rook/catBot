@@ -59,26 +59,6 @@ except FileNotFoundError:
     with open("catBot.toml", mode="w") as fp:
         fp.write(toml_string.toml_string)
 
-if tomlstr.get("invalid_quoted") == None:
-    with open("catBot.toml", "r") as f:
-        lines = f.readlines()
-
-    lines.insert(
-        12,
-        'invalid_quoted = "No quotes from {user} found!" # only takes the variable {user}\n',
-    )
-    lines.insert(
-        13,
-        'invalid_quoter = "No quotes quoted by {user} found!" # only takes the variable {user}\n',
-    )
-    lines.append("ignore_shared_chat = false\n")
-    lines.append(
-        "repeat_quote_on_save = false # set to true to send the quoted message as if you had used !quote <ID#> instead of just sending the save_success_(un)keyed message"
-    )
-
-    with open("catBot.toml", "w") as f:
-        f.writelines(lines)
-
 if debug:
     input("Checking input: \n")
 else:
