@@ -1,0 +1,7 @@
+toml\_string module
+===================
+
+.. automodule:: toml_string
+   :members:
+   :show-inheritance:
+   :undoc-members:

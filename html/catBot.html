@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html lang="Python" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>catBot module &#8212; catBot v2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=f90a06f1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-catBot">
+<span id="catbot-module"></span><h1>catBot module<a class="headerlink" href="#module-catBot" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="catBot.Config">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">con</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Connection</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cur</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">sqlite3.Connection.cursor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chat</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Chat</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">twitch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Twitch</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">TARGET_CHANNEL</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignored_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tomlset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tomlstr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bot_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">twitch_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TinyDB</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scopes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.Config" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Contains several variables that are frequently passed from function to function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>con</strong> (<em>sqlite3.Connection</em>) -- The connection to the quotes database, defaults to None</p></li>
+<li><p><strong>cur</strong> (<em>sqlite3.Connection.cursor</em>) -- The cursor for querying the quotes database, defaults to None</p></li>
+<li><p><strong>chat</strong> (<em>twitchAPI.chat.Chat</em>) -- The chat instance for sending and receiving Twitch chat messages, defaults to None</p></li>
+<li><p><strong>twitch</strong> (<em>twitchAPI.twitch.Twitch</em>) -- The Twitch API connection, defaults to None</p></li>
+<li><p><strong>TARGET_CHANNEL</strong> (<em>str</em>) -- The channel for the bot to connect to, defaults to None</p></li>
+<li><p><strong>channel_id</strong> (<em>str</em>) -- The user ID for TARGET_CHANNEL, defaults to None</p></li>
+<li><p><strong>ignored_list</strong> (<em>list</em>) -- A list of user IDs for the bot to ignore. Included despite being part of tomlset because they need to be converted to IDs from display names, defaults to None</p></li>
+<li><p><strong>tomlset</strong> (<em>dict</em>) -- Settings fetched from catBot.toml, defaults to None</p></li>
+<li><p><strong>tomlstr</strong> (<em>dict</em>) -- Format strings fetched from catBot.toml, defaults to None</p></li>
+<li><p><strong>bot_data</strong> (<em>dict</em>) -- Client ID, Client Secret, and target channel fetched from cache_db, defaults to None</p></li>
+<li><p><strong>twitch_data</strong> (<em>dict</em>) -- Token and refresh token fetched from cache_db, defaults to None</p></li>
+<li><p><strong>cache_db</strong> (<em>tinydb.database.TinyDB</em>) -- The encrypted storage for credentials.</p></li>
+<li><p><strong>scopes</strong> (<em>list</em>) -- A list of :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>twitchAPI.type.AuthScope`s for the bot to use, defaults to None</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="catBot.Quote">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">Quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">category</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quote</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quoter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.Quote" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Contains all the info for inserting quotes into the quote database or printing them to Twitch chat.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ID</strong> (<em>int</em>) -- The ID for the quote, defaults to None</p></li>
+<li><p><strong>key</strong> (<em>str</em>) -- The key, in format !key, defaults to empty string</p></li>
+<li><p><strong>date</strong> (<em>str</em>) -- A date string in format MM/DD/YY, defaults to None</p></li>
+<li><p><strong>user</strong> (<em>str</em>) -- The user being quoted. A user ID when inserting a quote, a user display name when fetching one, defaults to None</p></li>
+<li><p><strong>category</strong> (<em>str</em>) -- The Twitch category active at the time of the quote, defaults to None</p></li>
+<li><p><strong>quote</strong> (<em>str</em>) -- The text of the quote, defaults to None</p></li>
+<li><p><strong>quoter</strong> (<em>str</em>) -- The user doing the quoting. A user ID when inserting a quote, a user display name when fetching one, defaults to None</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.already_running">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">already_running</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.already_running" title="Link to this definition">¶</a></dt>
+<dd><p>Called when running.temp is found to stop the user from running multiple instances of catBot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>An error window popup.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ctypes.windll.user32.MessageBoxW</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.check_index">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">check_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.check_index" title="Link to this definition">¶</a></dt>
+<dd><p>Checks the ID column in the quote database for the index param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em>) -- The ID to search for in the database.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the index is found, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.check_key">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">check_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.check_key" title="Link to this definition">¶</a></dt>
+<dd><p>Checks the key column in the quote database for the key param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) -- A string in format &quot;!key&quot; to search the quote database for.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the key is found, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.check_quoted">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">check_quoted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.check_quoted" title="Link to this definition">¶</a></dt>
+<dd><p>Checks the user column in the quote database for the user_id param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user_id</strong> (<em>str</em>) -- A user ID to search the quote database for. Will not accept display names.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the key is found, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.check_quoter">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">check_quoter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.check_quoter" title="Link to this definition">¶</a></dt>
+<dd><p>Checks the quoter column in the quote database for the user_id param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>user_id</strong> (<em>str</em>) -- A user ID to search the quote database for. Will not accept display names.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the key is found, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.delete_quote">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">delete_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.delete_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Deletes the row from the quote database with the ID field matching index param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em>) -- The ID to search for in the quotes database.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.exit_script">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">exit_script</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.exit_script" title="Link to this definition">¶</a></dt>
+<dd><p>Attempts to delete <cite>running.temp</cite> when the bot stops.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.find_quote">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">find_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quoted</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quoter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.find_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Versatile function to find rows in the quote database matching the params.
+Finds a random row if no inputs are given.
+Will send error messages to Twitch chat if inputs to params aren't found in the quotes database.
+Never takes every available param, at most taking (optionally) index, quoted/quoter, and username, otherwise taking only index or only key.
+Trying to pass other combinations of inputs may lead to unexpected behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em><em>, </em><em>optional</em>) -- The ID to seach the quotes database for.</p></li>
+<li><p><strong>key</strong> (<em>str</em><em>, </em><em>optional</em>) -- A string in format &quot;!key&quot; to search the quote database for.</p></li>
+<li><p><strong>quoted</strong> -- A user ID to search the user column of the quote database for. Will not accept display names. Mutually exclusive with <cite>quoter</cite>.</p></li>
+<li><p><strong>quoter</strong> -- A user ID to search the quoter column of the quote database for. Will not accept display names. Mutually exclusive with <cite>quoted</cite>.</p></li>
+<li><p><strong>username</strong> (<em>str</em><em>, </em><em>optional</em>) -- The display name associated with the entered <cite>quoted</cite> or <cite>quoter</cite>.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TypeError</strong> -- When no <cite>config</cite> is passed.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Quote</span></code></a> object containing the fetched info from the quotes database.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#catBot.Quote" title="catBot.Quote">catBot.Quote</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.get_cache">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">get_cache</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.get_cache" title="Link to this definition">¶</a></dt>
+<dd><p>_summary_</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Returns the info from the encrypted <cite>cache.encrypted_db</cite></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tinydb.database.TinyDB</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.get_last_quote">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">get_last_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.get_last_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Queries the quotes database to find the maximum value in the ID column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The integer value of the highest ID.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.initialize_cache">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">initialize_cache</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.initialize_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the encrypted credential cache, then passes it to <cite>catBot.startup_checks</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.insert_quote">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">insert_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quote_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><span class="pre">Quote</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.insert_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Takes the Quote object, converts it to a tuple, and inserts it into the quote database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>quote_info</strong> (<a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><em>catBot.Quote</em></a>) -- A <a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Quote</span></code></a> object containing all the quote info.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.is_auth">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">is_auth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ChatMessage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.is_auth" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if the input <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.chat.ChatMessage</span></code> is authorized to save manual quotes of the streamer based on the setting in catBot.toml.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>twitchAPI.chat.ChatMessage</em>) -- The Twitch chat message to be checked for authorization.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the user is authorized, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.is_super_auth">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">is_super_auth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ChatMessage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.is_super_auth" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if the input <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.chat.ChatMessage</span></code> is authorized to save any type of quote based on the setting in catBot.toml.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>twitchAPI.chat.ChatMessage</em>) -- The Twitch chat message to be checked for authorization.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the user is authorized, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.main">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.main" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.message_handler">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">message_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ChatMessage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.message_handler" title="Link to this definition">¶</a></dt>
+<dd><p>Function is called when twitchAPI.chat.Chat.register_event(twitchAPI.type.ChatEvent(MESSAGE)) is triggered, i.e. when any message is sent in TARGET_CHANNEL.
+Checks messages for the !quote command, then uses regex to parse what the user intended to do. See <cite>Usage</cite> in the README to see what patterns are matched</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>twitchAPI.chat.ChatMessage</em>) -- The Twitch chat message to be checked for authorization.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the user is authorized, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.post_quote">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">post_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quote_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><span class="pre">Quote</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.post_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Posts a Twitch chat message with the information from <cite>quote_info</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>quote_info</strong> (<a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><em>catBot.Quote</em></a>) -- A <a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Quote</span></code></a> object containing all the quote info.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.start_bot">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">start_bot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.start_bot" title="Link to this definition">¶</a></dt>
+<dd><p>Starts the bot, finishes filling out missing Config fields, authenticates the bot, registers <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.type.ChatEvent`s,</span>
+<span class="pre">defines</span> <span class="pre">the</span> <span class="pre">functions</span> <span class="pre">to</span> <span class="pre">handle</span> <span class="pre">those</span> <span class="pre">events,</span> <span class="pre">opens</span> <span class="pre">the</span> <span class="pre">:class:`twitchAPI.chat.Chat</span></code> instance and <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.twitch.Twitch</span></code> instance, then calls <cite>catBot.stop_loop</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.startup_checks">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">startup_checks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">TinyDB</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.startup_checks" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if the bot is already running, loads info from <cite>catBot.toml</cite>, connects to the quotes database, then starts the bot.
+Begins constructing the <a class="reference internal" href="#catBot.Quote" title="catBot.Quote"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Quote</span></code></a> for use in the rest of the program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cache_db</strong> (<em>tinydb.database.TinyDB</em>) -- The user's encrypted credentials.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.stop_loop">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">stop_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.stop_loop" title="Link to this definition">¶</a></dt>
+<dd><p>Waits for the user to input &quot;stop&quot; to close the <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.chat.Chat</span></code> instance and <code class="xref py py-class docutils literal notranslate"><span class="pre">twitchAPI.twitch.Twitch</span></code> instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.update_quote">
+<span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">update_quote</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_quote</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#catBot.Config" title="catBot.Config"><span class="pre">Config</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#catBot.update_quote" title="Link to this definition">¶</a></dt>
+<dd><p>Updates the quote field from the quote database with the ID field matching index param.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>int</em>) -- The ID to search for in the quotes database.</p></li>
+<li><p><strong>new_quote</strong> (<em>str</em>) -- The text to replace the existing <code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Quote.quote</span></code> with.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#catBot.Config" title="catBot.Config"><em>catBot.Config</em></a>) -- A <a class="reference internal" href="#catBot.Config" title="catBot.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">catBot.Config</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="catBot.user_input">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">catBot.</span></span><span class="sig-name descname"><span class="pre">user_input</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#catBot.user_input" title="Link to this definition">¶</a></dt>
+<dd><p>Checks if the encrypted credentials exist, calls <cite>catBot.initialize_cache</cite> if they don't, then waits for the user to select an option. START starts the quote bot, EXIT stops the program,
+CHANGEPASS lets the user change their password for their encrypted credentials, CHANGEBOT lets the user change their Client ID and Client Secret or the channel for the bot to operate in.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">catBot</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, queenside_rook.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/catBot.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

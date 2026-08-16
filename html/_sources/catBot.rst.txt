@@ -1,0 +1,7 @@
+catBot module
+=============
+
+.. automodule:: catBot
+   :members:
+   :show-inheritance:
+   :undoc-members:
