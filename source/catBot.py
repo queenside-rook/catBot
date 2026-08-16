@@ -4,7 +4,7 @@ import ctypes
 import re
 import sqlite3
 from datetime import datetime
-from os import path, remove
+from os import name, path, remove, system
 from random import choice
 
 import tinydb_encrypted_jsonstorage as tae
@@ -24,7 +24,7 @@ class Quote:
 
     :param ID: The ID for the quote, defaults to None
     :type ID: int
-    :param key: The key, in format !key, defaults to ""
+    :param key: The key, in format !key, defaults to empty string
     :type key: str
     :param date: A date string in format MM/DD/YY, defaults to None
     :type date: str
@@ -131,6 +131,19 @@ class Config:
         self.scopes = scopes
 
 
+def print_splash(debug: bool=False):
+    """Clears the CLI then prints the splash art.
+    Called in most functions before printing other things to give a pseudo-GUI feeling.
+    Requires splash.py
+    
+    :param debug: Prevents this function from clearing the CLI when true, defaults to False
+    :type debug: bool
+    """
+    if not debug:
+        system('cls' if name == 'nt' else 'clear')  # clears the CLI
+        print(splash.title2)
+
+
 def get_last_quote(config: Config):
     """Queries the quotes database to find the maximum value in the ID column.
 
@@ -212,10 +225,10 @@ def check_index(index: int, config: Config):
     """
     index = int(index)
     check = []
-    for indicies in config.cur.execute(
+    for indices in config.cur.execute(
         "SELECT CAST(id AS INT) FROM quotes WHERE CAST(id AS INT) = ?", (index,)
     ):
-        check.append(indicies[0])
+        check.append(indices[0])
     return check != []
 
 
@@ -269,7 +282,7 @@ async def find_quote(
     Never takes every available param, at most taking (optionally) index, quoted/quoter, and username, otherwise taking only index or only key.
     Trying to pass other combinations of inputs may lead to unexpected behavior.
 
-    :param index: The ID to seach the quotes database for.
+    :param index: The ID to search the quotes database for.
     :type index: int, optional
     :param key: A string in format "!key" to search the quote database for.
     :type key: str, optional
@@ -309,7 +322,10 @@ async def find_quote(
                 )
                 return
             else:
-                results = results[index]
+                if index > 0:
+                    results = results[index-1]
+                else:
+                    results = results[index]
         else:
             await config.chat.send_message(
                 config.target, config.str.get("invalid_quoted").format(user=username)
@@ -330,7 +346,10 @@ async def find_quote(
                 )
                 return
             else:
-                results = results[index]
+                if index > 0:
+                    results = results[index-1]
+                else:
+                    results = results[index]
         else:
             await config.chat.send_message(
                 config.target, config.str.get("invalid_quoter").format(user=username)
@@ -392,31 +411,34 @@ async def post_quote(quote_info: Quote, config: Config):
     :param config: A :class:`catBot.Config`
     :type config: catBot.Config
     """
-    if quote_info.key != "":
-        await config.chat.send_message(config.target, quote_info.quote)
-        await config.chat.send_message(
-            config.target,
-            config.str.get("keyed").format(
-                ID=quote_info.ID,
-                key=quote_info.key,
-                date=quote_info.date,
-                user=quote_info.user,
-                category=quote_info.category,
-                quoter=quote_info.quoter,
-            ),
-        )
-    else:
-        await config.chat.send_message(config.target, quote_info.quote)
-        await config.chat.send_message(
-            config.target,
-            config.str.get("unkeyed").format(
-                ID=quote_info.ID,
-                date=quote_info.date,
-                user=quote_info.user,
-                category=quote_info.category,
-                quoter=quote_info.quoter,
-            ),
-        )
+    try:
+        if quote_info.key != "":
+            await config.chat.send_message(config.target, quote_info.quote)
+            await config.chat.send_message(
+                config.target,
+                config.str.get("keyed").format(
+                    ID=quote_info.ID,
+                    key=quote_info.key,
+                    date=quote_info.date,
+                    user=quote_info.user,
+                    category=quote_info.category,
+                    quoter=quote_info.quoter,
+                ),
+            )
+        else:
+            await config.chat.send_message(config.target, quote_info.quote)
+            await config.chat.send_message(
+                config.target,
+                config.str.get("unkeyed").format(
+                    ID=quote_info.ID,
+                    date=quote_info.date,
+                    user=quote_info.user,
+                    category=quote_info.category,
+                    quoter=quote_info.quoter,
+                ),
+            )
+    except AttributeError:
+        return
 
 
 def is_auth(msg: ChatMessage, config: Config):
@@ -429,17 +451,21 @@ def is_auth(msg: ChatMessage, config: Config):
     :return: True if the user is authorized, False otherwise.
     :rtype: bool
     """
-    return (
-        config.set.get("vip_only")
-        and not (msg.user.vip or msg.user.mod or msg.user.id == config.id)
-        or config.set.get("subs_only")
-        and not (
-            msg.user.vip
-            or msg.user.mod
-            or msg.user.subscriber
-            or msg.user.id == config.id
-        )
-    )
+    if config.set.get("vip_only"):
+        if not (msg.user.vip or msg.user.mod or msg.user.id == config.id):
+            return False
+        else:
+            return True
+    else: 
+        return True
+    
+    if config.set.get("sub_only"):
+        if not (msg.user.subscriber or msg.user.vip or msg.user.mod or msg.user.id == config.id):
+            return False
+        else:
+            return True
+    else: 
+        return True
 
 
 def is_super_auth(msg: ChatMessage, config: Config):
@@ -452,17 +478,20 @@ def is_super_auth(msg: ChatMessage, config: Config):
     :return: True if the user is authorized, False otherwise.
     :rtype: bool
     """
-    return (
-        config.set.get("super_vip_only")
-        and not (msg.user.vip or msg.user.mod or msg.user.id == config.id)
-        or config.set.get("super_subs_only")
-        and not (
-            msg.user.vip
-            or msg.user.mod
-            or msg.user.subscriber
-            or msg.user.id == config.id
-        )
-    )
+    if config.set.get("super_vip_only"):
+        if not (msg.user.vip or msg.user.mod or msg.user.id == config.id):
+            return False
+        else:
+            return True
+    else:
+        return True
+    if config.set.get("super_sub_only"):
+        if not (msg.user.subscriber or msg.user.vip or msg.user.mod or msg.user.id == config.id):
+            return False
+        else:
+            return True
+    else:
+        return True
 
 
 async def message_handler(msg: ChatMessage, config: Config):
@@ -534,13 +563,14 @@ async def message_handler(msg: ChatMessage, config: Config):
             if command != None and check_index(command.group(1), config):
                 await post_quote(
                     await find_quote(
-                        index=int(command.group(1), config=config), config=config
-                    )
+                        index=int(command.group(1)), config=config
+                    ),
+                    config=config
                 )
             else:
                 ID = command.group(1)
                 await config.chat.send_message(
-                    config.target, config.set.get("invalid_ID").format(ID=ID)
+                    config.target, config.str.get("invalid_ID").format(ID=ID)
                 )
 
         elif re.search(
@@ -549,7 +579,7 @@ async def message_handler(msg: ChatMessage, config: Config):
             command = re.search(r"^!quote (?P<key>![^ ]*$)", msg.text)
             if command != None:
                 await post_quote(
-                    find_quote(key=command.group(1), config=config), config=config
+                    await find_quote(key=command.group(1), config=config), config=config
                 )
 
         elif re.search(
@@ -775,34 +805,34 @@ async def message_handler(msg: ChatMessage, config: Config):
             await post_quote(await find_quote(config=config), config)
 
         elif re.search(
-            r"^!quote -\d$", msg.text
+            r"^!quote -\d*$", msg.text
         ):  # matches !quote followed by a negative index
             quote_ids = []
             for ids in config.cur.execute(
                 "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
             ):
                 quote_ids.append(ids[0])
-            if int(re.search(r"-(\d)", msg.text).group(1)) > len(quote_ids):
+            if int(re.search(r"-(\d*)", msg.text).group(1)) > len(quote_ids):
                 await config.chat.send_message(
                     config.target, "Requested negative index is too large!"
                 )
             else:
-                quote_id = quote_ids[int(re.search(r"(-\d)", msg.text).group(1))]
+                quote_id = quote_ids[int(re.search(r"(-\d*)", msg.text).group(1))]
                 await post_quote(
                     await find_quote(index=quote_id, config=config), config
                 )
 
-        elif re.search(r"^!quote delete \d$", msg.text):
+        elif re.search(r"^!quote delete \d*$", msg.text):
             if not msg.user.mod and msg.user.id != config.id:
                 return
-            delete_quote(int(re.search(r"^!quote delete (\d$)", msg.text).group(1)))
+            delete_quote(int(re.search(r"^!quote delete (\d*$)", msg.text).group(1)), config)
             ID = re.search(r"^!quote delete (\d$)", msg.text).group(1)
             await config.chat.send_message(
                 config.target, config.str.get("delete_success").format(ID=ID)
             )
 
-        elif re.search(r'^!quote update (\d) "(.*)"', msg.text):
-            command = re.search(r'^!quote update (\d) "(.*)"', msg.text)
+        elif re.search(r'^!quote update (\d*) "(.*)"', msg.text):
+            command = re.search(r'^!quote update (\d*) "(.*)"', msg.text)
             if not msg.user.mod and msg.user.id != config.id:
                 return
             if check_index(int(command.group(1)), config):
@@ -833,16 +863,15 @@ async def message_handler(msg: ChatMessage, config: Config):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            if check_quoted(user_id, config):
-                await post_quote(
-                    await find_quote(
-                        index=index,
-                        quoted=user_id,
-                        username=command.group("user"),
-                        config=config,
-                    ),
-                    config,
-                )
+            await post_quote(
+                await find_quote(
+                    index=index,
+                    quoted=user_id,
+                    username=command.group("user"),
+                    config=config,
+                ),
+                config,
+            )
 
         elif re.search(r"^!quoter", msg.text):
             command = re.search(
@@ -855,16 +884,15 @@ async def message_handler(msg: ChatMessage, config: Config):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            if check_quoter(user_id, config):
-                await post_quote(
-                    await find_quote(
-                        index=index,
-                        quoter=user_id,
-                        username=command.group("user"),
-                        config=config,
-                    ),
-                    config,
-                )
+            await post_quote(
+                await find_quote(
+                    index=index,
+                    quoter=user_id,
+                    username=command.group("user"),
+                    config=config,
+                ),
+                config,
+            )
 
 
 def already_running():
@@ -889,7 +917,7 @@ async def stop_loop(config: Config):
     :param config: A :class:`catBot.Config`
     :type config: Config
     """
-    splash.print_splash()
+    print_splash()
     print(
         f"\nBot is running on channel {config.target}. Type STOP to stop the quote bot.\n"
     )
@@ -902,7 +930,7 @@ async def stop_loop(config: Config):
     else:
         print("\n\033[93mInvalid input. Press ENTER to continue.\033[0m\n")
         input()
-        await stop_loop()
+        await stop_loop(config)
 
 
 async def start_bot(config: Config):
@@ -969,6 +997,7 @@ async def start_bot(config: Config):
 
     async def on_ready(ready_event: EventData):
         await ready_event.chat.join_room(config.target)
+        await config.chat.send_message(config.target, "meow")
 
     async def on_message(msg: ChatMessage):
         await message_handler(msg, config)
@@ -982,7 +1011,7 @@ async def start_bot(config: Config):
 
 async def initialize_cache():
     """Initializes the encrypted credential cache, then passes it to `catBot.startup_checks`."""
-    splash.print_splash()
+    print_splash()
     KEY = input("Desired password: ")
     PATH = "cache.encrypted_db"
     cache_db = TinyDB(encryption_key=KEY, path=PATH, storage=tae.EncryptedJSONStorage)
@@ -1009,7 +1038,7 @@ def get_cache():
     :return: Returns the info from the encrypted `cache.encrypted_db`
     :rtype: tinydb.database.TinyDB
     """
-    splash.print_splash()
+    print_splash()
     KEY = input("\nPassword: ")
     if KEY == "":
         cache_db = False
@@ -1033,7 +1062,7 @@ async def user_input():
         cache_db = get_cache()
     else:
         initialize_cache()
-    splash.print_splash()
+    print_splash()
     print(
         "\nType START to start the quote bot. If this is your first time running the program, start here."
     )
@@ -1044,12 +1073,12 @@ async def user_input():
     )
     option = input().lower()
     if option == "start":
-        splash.print_splash()
+        print_splash()
         await startup_checks(cache_db)
     elif option == "exit":
         return
     elif option == "changepass":
-        splash.print_splash()
+        print_splash()
         try:
             password = input("\nEnter current password: ")
             cache_db = TinyDB(
@@ -1070,7 +1099,7 @@ async def user_input():
             input()
             await user_input()
     elif option == "changebot":
-        splash.print_splash()
+        print_splash()
         try:
             password = input("\nEnter password: ")
             cache_db = TinyDB(
@@ -1154,8 +1183,8 @@ async def startup_checks(cache_db: TinyDB):
             )
             with open("catBot.toml", mode="w") as fp:
                 fp.write(toml_string.toml_string)
-        con = (sqlite3.connect("quotes.db", check_same_thread=False),)
-        cur = con.cur
+        con = sqlite3.connect("quotes.db", check_same_thread=False)
+        cur = con.cursor()
         config = Config(
             con=con,
             cur=cur,
