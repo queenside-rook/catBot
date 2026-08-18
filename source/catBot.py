@@ -739,20 +739,20 @@ async def start_bot(config: Config):
     try:
         config.twitch = await Twitch(APP_ID, APP_SECRET)
         auth = UserAuthenticator(config.twitch, config.scopes)
+
+        if config.twitch_data.get("refresh_token") != "":
+            token, refresh_token = (
+                config.twitch_data.get("token"),
+                config.twitch_data.get("refresh_token"),
+            )
+        else:
+            token, refresh_token = await auth.authenticate()
+            config.cache.update(
+                {"Twitch Tokens": {"token": token, "refresh_token": refresh_token}}
+            )
     except TwitchAuthorizationException:
         print("Invalid app info! Press ENTER to return to main menu, then enter CHANGEBOT -> APP")
         input()
-
-    if config.twitch_data.get("refresh_token") != "":
-        token, refresh_token = (
-            config.twitch_data.get("token"),
-            config.twitch_data.get("refresh_token"),
-        )
-    else:
-        token, refresh_token = await auth.authenticate()
-        config.cache.update(
-            {"Twitch Tokens": {"token": token, "refresh_token": refresh_token}}
-        )
 
     try:
         await config.twitch.set_user_authentication(token, config.scopes, refresh_token)
@@ -799,6 +799,7 @@ async def start_bot(config: Config):
 
     async def on_ready(ready_event: EventData):
         await ready_event.chat.join_room(config.target)
+        await config.chat.send_message(config.target, "meow")
 
     async def on_message(msg: ChatMessage):
         await message_handler(msg, config)
