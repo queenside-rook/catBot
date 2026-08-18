@@ -4,7 +4,7 @@ import ctypes
 import re
 import sqlite3
 from datetime import datetime
-from os import path, remove
+from os import name, path, remove, system
 from random import choice
 
 import tinydb_encrypted_jsonstorage as tae
@@ -13,7 +13,7 @@ from tinydb import TinyDB
 from twitchAPI.chat import Chat, ChatMessage, EventData
 from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.twitch import Twitch
-from twitchAPI.type import AuthScope, ChatEvent, InvalidTokenException
+from twitchAPI.type import AuthScope, ChatEvent, InvalidTokenException, TwitchAuthorizationException
 
 import splash
 import toml_string
@@ -24,7 +24,7 @@ class Quote:
 
     :param ID: The ID for the quote, defaults to None
     :type ID: int
-    :param key: The key, in format !key, defaults to ""
+    :param key: The key, in format !key, defaults to empty string
     :type key: str
     :param date: A date string in format MM/DD/YY, defaults to None
     :type date: str
@@ -123,25 +123,25 @@ class Config:
         self.target = TARGET_CHANNEL
         self.id = channel_id
         self.ignored = ignored_list
-        self.set = tomlset
-        self.str = tomlstr
-        self.bd = bot_data
-        self.td = twitch_data
+        self.settings = tomlset
+        self.format_strings = tomlstr
+        self.bot_data = bot_data
+        self.twitch_data = twitch_data
         self.cache = cache_db
         self.scopes = scopes
 
 
-def get_last_quote(config: Config):
-    """Queries the quotes database to find the maximum value in the ID column.
+def print_splash(debug: bool = False):
+    """Clears the CLI then prints the splash art.
+    Called in most functions before printing other things to give a pseudo-GUI feeling.
+    Requires splash.py
 
-    :param config: A :class:`catBot.Config`
-    :type config: catBot.Config
-    :return: The integer value of the highest ID.
-    :rtype: int
+    :param debug: Prevents this function from clearing the CLI when true, defaults to False
+    :type debug: bool
     """
-    for ids in config.cur.execute("SELECT max(CAST(id AS INT)) FROM quotes"):
-        quote_id = ids[0]
-    return int(quote_id)
+    if not debug:
+        system("cls" if name == "nt" else "clear")  # clears the CLI
+        print(splash.title2)
 
 
 def insert_quote(quote_info: Quote, config: Config):
@@ -150,9 +150,11 @@ def insert_quote(quote_info: Quote, config: Config):
     :param quote_info: A :class:`catBot.Quote` object containing all the quote info.
     :type quote_info: catBot.Quote
     """
+    if quote_info.key == "":
+        quote_info.key = None
     config.cur.execute(
-        """INSERT INTO quotes(id, key, date, user, category, quote, quoter) 
-            VALUES (?,?,?,?,?,?,?);""",
+        """INSERT INTO quotes(key, date, user, category, quote, quoter) 
+            VALUES (?,?,?,?,?,?);""",
         tuple(quote_info),
     )
     config.con.commit()
@@ -184,75 +186,58 @@ def update_quote(index: int, new_quote: str, config: Config):
     config.con.commit()
 
 
-def check_key(key: str, config: Config):
-    """Checks the key column in the quote database for the key param.
-
-    :param key: A string in format "!key" to search the quote database for.
-    :type key: str
-    :param config: A :class:`catBot.Config`
-    :type config: catBot.Config
-    :return: True if the key is found, False otherwise
-    :rtype: bool
-    """
-    check = []
-    for keys in config.cur.execute("SELECT key FROM quotes WHERE key = ?", (key,)):
-        check.append(keys[0])
-    return check != []
+def check_data(column: str, value, config: Config):
+    allowed_columns = {"ID", "key", "user", "quoter"}
+    if column not in allowed_columns:
+        raise ValueError(f"Invalid column: {column}")
+    return (
+        config.cur.execute(
+            f"SELECT 1 FROM quotes WHERE {column} = ? LIMIT 1", (value,)
+        ).fetchone()
+        is not None
+    )
 
 
-def check_index(index: int, config: Config):
-    """Checks the ID column in the quote database for the index param.
+async def save_quote(
+    key: str,
+    user: str,
+    quote: str,
+    quoter: str,
+    config: Config,
+):
+    if quote.startswith("!quote"):
+        await config.chat.send_message(
+            config.target, 'Cannot save quotes beginning with "!quote"'
+        )
+        return
+    quote_info = Quote(
+        ID=config.cur.lastrowid,
+        key=key,
+        date=datetime.now().strftime("%m/%d/%y"),
+        user=user,
+        category=await get_category(config),
+        quote=quote,
+        quoter=quoter,
+    )
+    insert_quote(quote_info, config)
 
-    :param index: The ID to search for in the database.
-    :type index: int
-    :param config: A :class:`catBot.Config`
-    :type config: catBot.Config
-    :return: True if the index is found, False otherwise
-    :rtype: bool
-    """
-    index = int(index)
-    check = []
-    for indicies in config.cur.execute(
-        "SELECT CAST(id AS INT) FROM quotes WHERE CAST(id AS INT) = ?", (index,)
-    ):
-        check.append(indicies[0])
-    return check != []
+    quote_info = await find_quote(index=quote_info.ID, config=config)
 
-
-def check_quoter(user_id: str, config: Config):
-    """Checks the quoter column in the quote database for the user_id param.
-
-    :param user_id: A user ID to search the quote database for. Will not accept display names.
-    :type user_id: str
-    :param config: A :class:`catBot.Config`
-    :type config: catBot.Config
-    :return: True if the key is found, False otherwise
-    :rtype: bool
-    """
-    check = []
-    for users in config.cur.execute(
-        "SELECT quoter FROM quotes WHERE quoter = ?", (user_id,)
-    ):
-        check.append(users[0])
-    return check != []
-
-
-def check_quoted(user_id: str, config: Config):
-    """Checks the user column in the quote database for the user_id param.
-
-    :param user_id: A user ID to search the quote database for. Will not accept display names.
-    :type user_id: str
-    :param config: A :class:`catBot.Config`
-    :type config: catBot.Config
-    :return: True if the key is found, False otherwise
-    :rtype: bool
-    """
-    check = []
-    for users in config.cur.execute(
-        "SELECT user FROM quotes WHERE user = ?", (user_id,)
-    ):
-        check.append(users[0])
-    return check != []
+    if config.settings.get("repeat_quote_on_save"):
+        await post_quote(quote_info, config)
+    else:
+        format_key = "save_success_keyed" if key else "save_success_unkeyed"
+        await config.chat.send_message(
+            config.target,
+            config.format_strings.get(format_key).format(
+                ID=quote_info.ID,
+                key=quote_info.key,
+                date=quote_info.date,
+                user=quote_info.user,
+                category=quote_info.category,
+                quoter=quote_info.quoter,
+            ),
+        )
 
 
 async def find_quote(
@@ -269,7 +254,7 @@ async def find_quote(
     Never takes every available param, at most taking (optionally) index, quoted/quoter, and username, otherwise taking only index or only key.
     Trying to pass other combinations of inputs may lead to unexpected behavior.
 
-    :param index: The ID to seach the quotes database for.
+    :param index: The ID to search the quotes database for.
     :type index: int, optional
     :param key: A string in format "!key" to search the quote database for.
     :type key: str, optional
@@ -287,21 +272,24 @@ async def find_quote(
     :return: A :class:`catBot.Quote` object containing the fetched info from the quotes database.
     :rtype: catBot.Quote
     """
-    if config == None:
+
+    results = None
+
+    if config is None:
         raise TypeError("Required config argument not passed.")
-    for data in config.cur.execute("SELECT count(*) FROM quotes"):
-        db_count = data[0]
+    db_count = config.cur.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
     if db_count == 0:
-        await config.chat.send_message(config.target, config.str.get("empty_db"))
+        await config.chat.send_message(
+            config.target, config.format_strings.get("empty_db")
+        )
         return
-    if quoted != None:
-        if check_quoted(quoted, config):
-            results = []
-            for data in config.cur.execute(
-                "SELECT * FROM quotes WHERE user = ?", (quoted,)
-            ):
-                results.append(data)
-            if index == None:
+    if quoted is not None:
+        if check_data("user", quoted, config):
+            results = config.cur.execute(
+                "SELECT * FROM quotes WHERE user = ?",
+                (quoted,),
+            ).fetchall()
+            if index is None:
                 results = choice(results)
             elif abs(index) > len(results):
                 await config.chat.send_message(
@@ -309,20 +297,23 @@ async def find_quote(
                 )
                 return
             else:
-                results = results[index]
+                if index > 0:
+                    results = results[index - 1]
+                else:
+                    results = results[index]
         else:
             await config.chat.send_message(
-                config.target, config.str.get("invalid_quoted").format(user=username)
+                config.target,
+                config.format_strings.get("invalid_quoted").format(user=username),
             )
             return
-    elif quoter != None:
-        if check_quoter(quoter, config):
-            results = []
-            for data in config.cur.execute(
-                "SELECT * FROM quotes WHERE quoter = ?", (quoter,)
-            ):
-                results.append(data)
-            if index == None:
+    elif quoter is not None:
+        if check_data("quoter", quoter, config):
+            results = config.cur.execute(
+                "SELECT * FROM quotes WHERE quoter = ?",
+                (quoter,),
+            ).fetchall()
+            if index is None:
                 results = choice(results)
             elif abs(index) > len(results):
                 await config.chat.send_message(
@@ -330,42 +321,41 @@ async def find_quote(
                 )
                 return
             else:
-                results = results[index]
+                if index > 0:
+                    results = results[index - 1]
+                else:
+                    results = results[index]
         else:
             await config.chat.send_message(
-                config.target, config.str.get("invalid_quoter").format(user=username)
+                config.target,
+                config.format_strings.get("invalid_quoter").format(user=username),
             )
             return
-    elif key != None:
-        if check_key(key, config):
-            for data in config.cur.execute(
-                "SELECT * FROM quotes WHERE key = ?", (key,)
-            ):
-                results = data
+    elif key is not None:
+        if check_data("key", key, config):
+            results = config.cur.execute("SELECT * FROM quotes WHERE key = ?", (key,))
         else:
             await config.chat.send_message(
-                config.target, config.str.get("invalid_key").format(key=key)
+                config.target, config.format_strings.get("invalid_key").format(key=key)
             )
             return
-    elif index != None:
-        if check_index(index, config):
-            for data in config.cur.execute(
-                "SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (index,)
-            ):
-                results = data
+    elif index is not None:
+        if check_data("ID", index, config):
+            results = config.cur.execute(
+                "SELECT * FROM quotes WHERE id = ?", (index,)
+            )
         else:
             await config.chat.send_message(
-                config.target, config.str.get("invalid_ID").format(ID=index)
+                config.target, config.format_strings.get("invalid_ID").format(ID=index)
             )
+            return
     else:
         quote_ids = []
-        for ids in config.cur.execute(
-            "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
-        ):
+        for ids in config.cur.execute("SELECT id FROM quotes ORDER BY id"):
             quote_ids.append(ids[0])
         quote_id = choice(quote_ids)
         for data in config.cur.execute(
-            "SELECT * FROM quotes WHERE CAST(id AS INT) = ?", (quote_id,)
+            "SELECT * FROM quotes WHERE id = ?", (quote_id,)
         ):
             results = data
 
@@ -375,10 +365,14 @@ async def find_quote(
         ID=results[0],
         key=results[1],
         date=results[2],
-        user=(await anext(config.twitch.get_users(str(results[3])))).display_name,
+        user=(
+            await anext(config.twitch.get_users(user_ids=str(results[3])))
+        ).display_name,
         category=results[4],
         quote=results[5],
-        quoter=(await anext(config.twitch.get_users(str(results[6])))).display_name,
+        quoter=(
+            await anext(config.twitch.get_users(user_ids=str(results[6])))
+        ).display_name,
     )
 
     return quote_info
@@ -392,11 +386,12 @@ async def post_quote(quote_info: Quote, config: Config):
     :param config: A :class:`catBot.Config`
     :type config: catBot.Config
     """
-    if quote_info.key != "":
+
+    if quote_info.key is not None:
         await config.chat.send_message(config.target, quote_info.quote)
         await config.chat.send_message(
             config.target,
-            config.str.get("keyed").format(
+            config.format_strings.get("keyed").format(
                 ID=quote_info.ID,
                 key=quote_info.key,
                 date=quote_info.date,
@@ -409,7 +404,7 @@ async def post_quote(quote_info: Quote, config: Config):
         await config.chat.send_message(config.target, quote_info.quote)
         await config.chat.send_message(
             config.target,
-            config.str.get("unkeyed").format(
+            config.format_strings.get("unkeyed").format(
                 ID=quote_info.ID,
                 date=quote_info.date,
                 user=quote_info.user,
@@ -429,17 +424,15 @@ def is_auth(msg: ChatMessage, config: Config):
     :return: True if the user is authorized, False otherwise.
     :rtype: bool
     """
-    return (
-        config.set.get("vip_only")
-        and not (msg.user.vip or msg.user.mod or msg.user.id == config.id)
-        or config.set.get("subs_only")
-        and not (
-            msg.user.vip
-            or msg.user.mod
-            or msg.user.subscriber
-            or msg.user.id == config.id
-        )
-    )
+    if config.settings.get("vip_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.id == config.id
+    ):
+        return False
+    elif config.settings.get("sub_only") and not (
+        msg.user.subscriber or msg.user.vip or msg.user.mod or msg.user.id == config.id
+    ):
+        return False
+    return True
 
 
 def is_super_auth(msg: ChatMessage, config: Config):
@@ -452,17 +445,22 @@ def is_super_auth(msg: ChatMessage, config: Config):
     :return: True if the user is authorized, False otherwise.
     :rtype: bool
     """
-    return (
-        config.set.get("super_vip_only")
-        and not (msg.user.vip or msg.user.mod or msg.user.id == config.id)
-        or config.set.get("super_subs_only")
-        and not (
-            msg.user.vip
-            or msg.user.mod
-            or msg.user.subscriber
-            or msg.user.id == config.id
-        )
-    )
+    if config.settings.get("super_vip_only") and not (
+        msg.user.vip or msg.user.mod or msg.user.id == config.id
+    ):
+        return False
+    elif config.settings.get("super_sub_only") and not (
+        msg.user.subscriber or msg.user.vip or msg.user.mod or msg.user.id == config.id
+    ):
+        return False
+    return True
+
+
+async def get_category(config: Config):
+    return re.search(
+        r"game_name=(?P<name>.*?),",
+        str(list(await config.twitch.get_channel_information(config.id))[0]),
+    ).group("name")
 
 
 async def message_handler(msg: ChatMessage, config: Config):
@@ -473,84 +471,47 @@ async def message_handler(msg: ChatMessage, config: Config):
     :type msg: twitchAPI.chat.ChatMessage
     :param config: A :class:`catBot.Config`
     :type config: catBot.Config
-    :return: True if the user is authorized, False otherwise.
-    :rtype: bool
     """
     if msg.user.id in config.ignored:
         return
     if (
-        re.search(r"!quote", msg.text) != None
+        re.search(r"!quote", msg.text) is not None
     ):  # checks the message for "!quote" so it can more efficiently ignore messages
-        if msg.reply_parent_msg_body != None:  # checks if message is a reply
+        if msg.reply_parent_msg_body is not None:  # checks if message is a reply
             if not is_super_auth(msg, config):
                 return
             command = re.search(
                 r"^@[A-Za-z_0-9]* !quote( |)(?P<key>!.*$|$)", msg.text
             )  # checks message and matches an optional key for the quote
-            if command != None:
-                quote_info = Quote(
-                    ID=get_last_quote(config) + 1,
-                    key=command.group(2),
-                    date=datetime.now().strftime("%m/%d/%y"),
-                    user=msg.reply_parent_user_id,
-                    category=re.search(
-                        r"game_name=(?P<name>.*?),",
-                        str(
-                            list(
-                                await config.twitch.get_channel_information(config.id)
-                            )[0]
-                        ),
-                    ).group("name"),
-                    quote=msg.reply_parent_msg_body.replace("\\s", " "),
-                    quoter=msg.user.id,
-                )
-                if re.search(r"^!quote", quote_info.quote):
-                    await config.chat.send_message(
-                        config.target, 'Cannot save quotes beginning with "!quote"'
-                    )
-                    return
-                insert_quote(quote_info, config)
-                quote_info = await find_quote(
-                    index=get_last_quote(config), config=config
-                )
-                if config.set.get("repeat_quote_on_save"):
-                    await post_quote(quote_info, config)
-                else:
-                    await config.chat.send_message(
-                        config.target,
-                        config.str.get("save_success_unkeyed").format(
-                            ID=quote_info.ID,
-                            user=quote_info.user,
-                            date=quote_info.date,
-                            category=quote_info.category,
-                            quoter=quote_info.quoter,
-                        ),
-                    )
+            if command is not None:
+                key = command.group(2)
+                user = msg.reply_parent_user_id
+                quote = msg.reply_parent_msg_body.replace("\\s", " ")
+                quoter = msg.user.id
+                await save_quote(key, user, quote, quoter, config)
 
         elif (
-            re.search(r"^!quote (?P<number>\d*$)", msg.text) != None
+            re.search(r"^!quote (\d+$)", msg.text) is not None
         ):  # matches !quote followed by a number
-            command = re.search(r"^!quote (?P<number>\d*$)", msg.text)
-            if command != None and check_index(command.group(1), config):
+            command = re.search(r"^!quote (\d+$)", msg.text)
+            ID = int(command.group(1))
+            if command is not None and check_data("ID", ID, config):
                 await post_quote(
-                    await find_quote(
-                        index=int(command.group(1), config=config), config=config
-                    )
+                    await find_quote(index=int(command.group(1)), config=config),
+                    config=config,
                 )
             else:
-                ID = command.group(1)
                 await config.chat.send_message(
-                    config.target, config.set.get("invalid_ID").format(ID=ID)
+                    config.target, config.format_strings.get("invalid_ID").format(ID=ID)
                 )
 
         elif re.search(
             r"^!quote (?P<key>![^ ]*$)", msg.text
         ):  # matches !quote followed by a key
             command = re.search(r"^!quote (?P<key>![^ ]*$)", msg.text)
-            if command != None:
-                await post_quote(
-                    find_quote(key=command.group(1), config=config), config=config
-                )
+            await post_quote(
+                await find_quote(key=command.group(1), config=config), config=config
+            )
 
         elif re.search(
             r'(?P<command>^!quote) *(?P<key>![^ ]*|) *(?P<user>@[A-Za-z_0-9]*|) *"(?P<quote>.*)"$',  # matches !quote followed by an optional key, an optional @user, and a manually entered "quote"
@@ -569,104 +530,35 @@ async def message_handler(msg: ChatMessage, config: Config):
             ):  # case with no key and no @user
                 if not is_auth(msg, config):
                     return
-                if msg.source_room_id == None:
+                if msg.source_room_id is None:
                     user = config.id
                 else:
                     user = msg.source_room_id
-                quote_info = Quote(
-                    ID=get_last_quote(config) + 1,
-                    key=command.group(2),
-                    date=datetime.now().strftime("%m/%d/%y"),
-                    user=user,
-                    category=re.search(
-                        r"game_name=(?P<name>.*?),",
-                        str(
-                            list(
-                                await config.twitch.get_channel_information(config.id)
-                            )[0]
-                        ),
-                    ).group("name"),
-                    quote=command.group(4),
-                    quoter=msg.user.id,
-                )
-                if re.search(r"^!quote", quote_info.quote):
-                    await config.chat.send_message(
-                        config.target, 'Cannot save quotes beginning with "!quote"'
-                    )
-                    return
-                insert_quote(quote_info, config)
-                quote_info = await find_quote(
-                    index=get_last_quote(config), config=config
-                )
-                if config.set.get("repeat_quote_on_save"):
-                    await post_quote(quote_info, config)
-                else:
-                    await config.chat.send_message(
-                        config.target,
-                        config.str.get("save_success_unkeyed").format(
-                            user=quote_info.user,
-                            date=quote_info.date,
-                            category=quote_info.category,
-                            ID=quote_info.ID,
-                            quoter=quote_info.quoter,
-                        ),
-                    )
+                key = command.group(2)
+                quote = command.group(4)
+                quoter = msg.user.id
+                await save_quote(key, user, quote, quoter, config)
 
             elif (
                 command.group(2) != "" and command.group(3) == ""
             ):  # case with key and no @user
                 if not is_auth(msg, config):
                     return
-                if check_key(command.group(2), config):
+                if check_data("key", command.group(2), config):
                     key = command.group(2)
                     await config.chat.send_message(
-                        config.target, config.str.get("key_exists").format(key=key)
+                        config.target,
+                        config.format_strings.get("key_exists").format(key=key),
                     )
                 else:
-                    if msg.source_room_id == None:
+                    if msg.source_room_id is None:
                         user = config.id
                     else:
                         user = msg.source_room_id
-                    quote_info = Quote(
-                        ID=get_last_quote(config) + 1,
-                        key=command.group(2),
-                        date=datetime.now().strftime("%m/%d/%y"),
-                        user=user,
-                        category=re.search(
-                            r"game_name=(?P<name>.*?),",
-                            str(
-                                list(
-                                    await config.twitch.get_channel_information(
-                                        config.id
-                                    )
-                                )[0]
-                            ),
-                        ).group("name"),
-                        quote=command.group(4),
-                        quoter=msg.user.id,
-                    )
-                    if re.search(r"^!quote", quote_info.quote):
-                        await config.chat.send_message(
-                            config.target, 'Cannot save quotes beginning with "!quote"'
-                        )
-                        return
-                    insert_quote(quote_info, config)
-                    quote_info = await find_quote(
-                        index=get_last_quote(config), config=config
-                    )
-                    if config.set.get("repeat_quote_on_save"):
-                        await post_quote(quote_info, config)
-                    else:
-                        await config.chat.send_message(
-                            config.target,
-                            config.str.get("save_success_keyed").format(
-                                ID=quote_info.ID,
-                                key=quote_info.key,
-                                user=quote_info.user,
-                                date=quote_info.date,
-                                quoter=quote_info.quoter,
-                            ),
-                        )
+                    key = command.group(2)
+                    quote = command.group(4)
+                    quoter = msg.user.id
+                    await save_quote(key, user, quote, quoter, config)
 
             elif (
                 command.group(2) == "" and command.group(3) != ""
@@ -674,146 +566,79 @@ async def message_handler(msg: ChatMessage, config: Config):
                 if not is_auth(msg, config):
                     return
                 user = command.group(3).replace("@", "")
-                user = (await anext(config.twitch.get_users(None, user))).id
-                quote_info = Quote(
-                    ID=get_last_quote(config) + 1,
-                    key=command.group(2),
-                    date=datetime.now().strftime("%m/%d/%y"),
-                    user=user,
-                    category=re.search(
-                        r"game_name=(?P<name>.*?),",
-                        str(
-                            list(
-                                await config.twitch.get_channel_information(config.id)
-                            )[0]
-                        ),
-                    ).group("name"),
-                    quote=command.group(4),
-                    quoter=msg.user.id,
-                )
-
-                if re.search(r"^!quote", quote_info.quote):
-                    await config.chat.send_message(
-                        config.target, 'Cannot save quotes beginning with "!quote"'
-                    )
-                    return
-                insert_quote(quote_info, config)
-                quote_info = await find_quote(
-                    index=get_last_quote(config), config=config
-                )
-                if config.set.get("repeat_quote_on_save"):
-                    await post_quote(quote_info, config)
-                else:
-                    await config.chat.send_message(
-                        config.target,
-                        config.str.get("save_success_unkeyed").format(
-                            ID=quote_info.ID,
-                            date=quote_info.date,
-                            user=quote_info.user,
-                            category=quote_info.category,
-                            quoter=quote_info.quoter,
-                        ),
-                    )
+                user = (await anext(config.twitch.get_users(logins=user))).id
+                key = command.group(2)
+                quote = command.group(4)
+                quoter = msg.user.id
+                await save_quote(key, user, quote, quoter, config)
 
             elif (
                 command.group(2) != "" and command.group(3) != ""
             ):  # case with found key and found @user
-                if check_key(command.group(2), config):
+                if check_data("key", command.group(2), config):
                     key = command.group(2)
                     await config.chat.send_message(
                         config.target,
-                        config.str.get("key_exists").format(
+                        config.format_strings.get("key_exists").format(
                             key=key,
                         ),
                     )
                 else:
                     user = command.group(3).replace("@", "")
-                    user = (await anext(config.twitch.get_users(None, user))).id
-                    quote_info = Quote(
-                        ID=get_last_quote() + 1,
-                        key=command.group(2),
-                        date=datetime.now().strftime("%m/%d/%y"),
-                        user=user,
-                        category=re.search(
-                            r"game_name=(?P<name>.*?),",
-                            str(
-                                list(
-                                    await config.twitch.get_channel_information(
-                                        config.id
-                                    )
-                                )[0]
-                            ),
-                        ).group("name"),
-                        quote=command.group(4),
-                        quoter=msg.user.id,
-                    )
-                    if re.search(r"^!quote", quote_info.quote):
-                        await config.chat.send_message(
-                            config.target, 'Cannot save quotes beginning with "!quote"'
-                        )
-                        return
-                    insert_quote(quote_info, config)
-                    quote_info = await find_quote(
-                        index=get_last_quote(config), config=config
-                    )
-                    if config.str.get("repeat_quote_on_save"):
-                        await post_quote(quote_info, config)
-                    else:
-                        await config.chat.send_message(
-                            config.target,
-                            config.str.get("save_success_keyed").format(
-                                ID=quote_info.ID,
-                                key=quote_info.key,
-                                date=quote_info.date,
-                                user=quote_info.user,
-                                category=quote_info.category,
-                                quoter=quote_info.quoter,
-                            ),
-                        )
+                    user = (await anext(config.twitch.get_users(logins=user))).id
+                    key = command.group(2)
+                    quote = command.group(4)
+                    quoter = msg.user.id
+                    await save_quote(key, user, quote, quoter, config)
 
         elif re.search(r"^!quote$", msg.text):
             await post_quote(await find_quote(config=config), config)
 
         elif re.search(
-            r"^!quote -\d$", msg.text
+            r"^!quote -\d+$", msg.text
         ):  # matches !quote followed by a negative index
             quote_ids = []
-            for ids in config.cur.execute(
-                "SELECT CAST(id AS INT) FROM quotes ORDER BY CAST(id AS INT)"
-            ):
+            for ids in config.cur.execute("SELECT id FROM quotes ORDER BY id"):
                 quote_ids.append(ids[0])
-            if int(re.search(r"-(\d)", msg.text).group(1)) > len(quote_ids):
+            if int(re.search(r"-(\d+)", msg.text).group(1)) > len(quote_ids):
                 await config.chat.send_message(
                     config.target, "Requested negative index is too large!"
                 )
             else:
-                quote_id = quote_ids[int(re.search(r"(-\d)", msg.text).group(1))]
+                quote_id = quote_ids[int(re.search(r"(-\d+)", msg.text).group(1))]
                 await post_quote(
                     await find_quote(index=quote_id, config=config), config
                 )
 
-        elif re.search(r"^!quote delete \d$", msg.text):
+        elif re.search(r"^!quote delete \d+$", msg.text):
+            ID = int(re.search(r"^!quote delete (\d+$)", msg.text).group(1))
             if not msg.user.mod and msg.user.id != config.id:
                 return
-            delete_quote(int(re.search(r"^!quote delete (\d$)", msg.text).group(1)))
-            ID = re.search(r"^!quote delete (\d$)", msg.text).group(1)
-            await config.chat.send_message(
-                config.target, config.str.get("delete_success").format(ID=ID)
-            )
-
-        elif re.search(r'^!quote update (\d) "(.*)"', msg.text):
-            command = re.search(r'^!quote update (\d) "(.*)"', msg.text)
-            if not msg.user.mod and msg.user.id != config.id:
-                return
-            if check_index(int(command.group(1)), config):
-                update_quote(int(command.group(1)), command.group(2), config)
-                ID = command.group(1)
+            if check_data("ID", ID, config):
+                delete_quote(ID, config)
                 await config.chat.send_message(
-                    config.target, config.str.get("update_success").format(ID=ID)
+                    config.target,
+                    config.format_strings.get("delete_success").format(ID=ID),
                 )
             else:
                 await config.chat.send_message(
-                    config.target, config.str.get("invalid_ID").format(ID=ID)
+                    config.target, config.format_strings.get("invalid_ID").format(ID=ID)
+                )
+
+        elif re.search(r'^!quote update (\d+) "(.*)"$', msg.text):
+            command = re.search(r'^!quote update (\d+) "(.*)"$', msg.text)
+            ID = int(command.group(1))
+            if not msg.user.mod and msg.user.id != config.id:
+                return
+            if check_data("ID", ID, config):
+                update_quote(ID, command.group(2), config)
+                await config.chat.send_message(
+                    config.target,
+                    config.format_strings.get("update_success").format(ID=ID),
+                )
+            else:
+                await config.chat.send_message(
+                    config.target, config.format_strings.get("invalid_ID").format(ID=ID)
                 )
 
         elif re.search(r"^!quote help$", msg.text):
@@ -822,9 +647,9 @@ async def message_handler(msg: ChatMessage, config: Config):
                 "Find out how to use !quote at https://github.com/queenside-rook/catBot/blob/main/README.md",
             )
 
-        elif re.search(r"^!quoted", msg.text):
+        elif re.search(r"^!quoted (@|)([A-Za-z_0-9]+)", msg.text):
             command = re.search(
-                r"^!quoted *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text
+                r"^!quoted *(@|)(?P<user>[A-Za-z_0-9]+) *(-|)(\d*)$", msg.text
             )
             user_id = (
                 await anext(config.twitch.get_users(logins=command.group("user")))
@@ -833,20 +658,19 @@ async def message_handler(msg: ChatMessage, config: Config):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            if check_quoted(user_id, config):
-                await post_quote(
-                    await find_quote(
-                        index=index,
-                        quoted=user_id,
-                        username=command.group("user"),
-                        config=config,
-                    ),
-                    config,
-                )
+            await post_quote(
+                await find_quote(
+                    index=index,
+                    quoted=user_id,
+                    username=command.group("user"),
+                    config=config,
+                ),
+                config,
+            )
 
-        elif re.search(r"^!quoter", msg.text):
+        elif re.search(r"^!quoter (@|)([A-Za-z_0-9]+)", msg.text):
             command = re.search(
-                r"^!quoter *(@|)(?P<user>[A-Za-z_0-9]*|) *(-|)(\d*)", msg.text
+                r"^!quoter (@|)(?P<user>[A-Za-z_0-9]+) *(-|)(\d*)$", msg.text
             )
             user_id = (
                 await anext(config.twitch.get_users(logins=command.group("user")))
@@ -855,24 +679,19 @@ async def message_handler(msg: ChatMessage, config: Config):
                 index = int(command.group(3) + command.group(4))
             except ValueError:
                 index = None
-            if check_quoter(user_id, config):
-                await post_quote(
-                    await find_quote(
-                        index=index,
-                        quoter=user_id,
-                        username=command.group("user"),
-                        config=config,
-                    ),
-                    config,
-                )
+            await post_quote(
+                await find_quote(
+                    index=index,
+                    quoter=user_id,
+                    username=command.group("user"),
+                    config=config,
+                ),
+                config,
+            )
 
 
 def already_running():
-    """Called when running.temp is found to stop the user from running multiple instances of catBot.
-
-    :return: An error window popup.
-    :rtype: ctypes.windll.user32.MessageBoxW
-    """
+    """Called when running.temp is found to stop the user from running multiple instances of catBot."""
 
     atexit.unregister(exit_script)
     return ctypes.windll.user32.MessageBoxW(
@@ -889,20 +708,20 @@ async def stop_loop(config: Config):
     :param config: A :class:`catBot.Config`
     :type config: Config
     """
-    splash.print_splash()
-    print(
-        f"\nBot is running on channel {config.target}. Type STOP to stop the quote bot.\n"
-    )
-    option = input().lower()
-    if option == "stop":
-        config.chat.stop()
-        await config.twitch.close()
-        exit_script()
-        await user_input()
-    else:
-        print("\n\033[93mInvalid input. Press ENTER to continue.\033[0m\n")
-        input()
-        await stop_loop()
+    while True:
+        print_splash()
+        print(
+            f"\nBot is running on channel {config.target}. Type STOP to stop the quote bot.\n"
+        )
+        option = (await asyncio.to_thread(input)).strip().lower()
+        if option == "stop":
+            config.chat.stop()
+            await config.twitch.close()
+            exit_script()
+            return
+        else:
+            print("\n\033[93mInvalid input. Press ENTER to continue.\033[0m\n")
+            await asyncio.to_thread(input)
 
 
 async def start_bot(config: Config):
@@ -913,17 +732,21 @@ async def start_bot(config: Config):
     :type config: Config
     """
     APP_ID, APP_SECRET, config.target = (
-        config.bd.get("APP_ID"),
-        config.bd.get("APP_SECRET"),
-        config.bd.get("TARGET_CHANNEL"),
+        config.bot_data.get("APP_ID"),
+        config.bot_data.get("APP_SECRET"),
+        config.bot_data.get("TARGET_CHANNEL"),
     )
-    config.twitch = await Twitch(APP_ID, APP_SECRET)
-    auth = UserAuthenticator(config.twitch, config.scopes)
+    try:
+        config.twitch = await Twitch(APP_ID, APP_SECRET)
+        auth = UserAuthenticator(config.twitch, config.scopes)
+    except TwitchAuthorizationException:
+        print("Invalid app info! Press ENTER to return to main menu, then enter CHANGEBOT -> APP")
+        input()
 
-    if config.td.get("refresh_token") != "":
+    if config.twitch_data.get("refresh_token") != "":
         token, refresh_token = (
-            config.td.get("token"),
-            config.td.get("refresh_token"),
+            config.twitch_data.get("token"),
+            config.twitch_data.get("refresh_token"),
         )
     else:
         token, refresh_token = await auth.authenticate()
@@ -944,13 +767,21 @@ async def start_bot(config: Config):
             )
         except InvalidTokenException:
             print("Unrecoverable error.")
+            await config.twitch.close()
+            config.cur.close()
+            config.con.close()
+            return
     config.chat = await Chat(
-        config.twitch, no_shared_chat_messages=config.set.get("ignore_shared_chat")
+        config.twitch, no_shared_chat_messages=config.settings.get("ignore_shared_chat")
     )
-    channel_data = config.twitch.get_users(logins=config.target)
-    async for data in channel_data:
-        channel_id = data
-    config.id = channel_id.id
+    try:
+        channel = await anext(config.twitch.get_users(logins=config.target))
+        config.id = channel.id
+    except UnboundLocalError:
+        input(
+            "Channel doesn't exist! Press ENTER to return to main menu, then choose CHANGEBOT -> CHANNEL"
+        )
+        return
 
     # global ignored_list
     ignored = config.twitch.get_users(logins=config.ignored)
@@ -959,9 +790,8 @@ async def start_bot(config: Config):
     ).id  # with no argument, this function fetches the ID of the twitch account that's currently authenticated
     config.ignored = []
     async for data in ignored:
-        ignored = data.id
-        config.ignored.append(ignored)
-    if not config.set.get("using_bot"):
+        config.ignored.append(data.id)
+    if not config.settings.get("using_bot"):
         try:
             config.ignored.remove(bot_id)
         except ValueError:
@@ -980,9 +810,11 @@ async def start_bot(config: Config):
     await stop_loop(config)
 
 
-async def initialize_cache():
-    """Initializes the encrypted credential cache, then passes it to `catBot.startup_checks`."""
-    splash.print_splash()
+def initialize_cache():
+    """Initializes the encrypted credential cache, then returns it.
+    :return: A tinydb object with newly created info.
+    :rtype: tinydb.database.TinyDB"""
+    print_splash()
     KEY = input("Desired password: ")
     PATH = "cache.encrypted_db"
     cache_db = TinyDB(encryption_key=KEY, path=PATH, storage=tae.EncryptedJSONStorage)
@@ -992,15 +824,14 @@ async def initialize_cache():
     cache_db.insert(
         {
             "Bot Info": {
-                "APP_ID": APP_ID.replace("\n", ""),
-                "APP_SECRET": APP_SECRET.replace("\n", ""),
-                "TARGET_CHANNEL": TARGET_CHANNEL.replace("\n", ""),
+                "APP_ID": APP_ID,
+                "APP_SECRET": APP_SECRET,
+                "TARGET_CHANNEL": TARGET_CHANNEL,
             }
         }
     )
     cache_db.insert({"Twitch Tokens": {"token": "", "refresh_token": ""}})
-    exit_script()
-    await startup_checks(cache_db)
+    return cache_db
 
 
 def get_cache():
@@ -1009,76 +840,68 @@ def get_cache():
     :return: Returns the info from the encrypted `cache.encrypted_db`
     :rtype: tinydb.database.TinyDB
     """
-    splash.print_splash()
-    KEY = input("\nPassword: ")
-    if KEY == "":
-        cache_db = False
-    try:
-        cache_db = TinyDB(
-            encryption_key=KEY,
-            path="cache.encrypted_db",
-            storage=tae.EncryptedJSONStorage,
-        )
-    except ValueError:
-        print("Invalid password!")
-        get_cache()
-    return cache_db
+    while True:
+        print_splash()
+        KEY = input("\nPassword: ")
+        try:
+            cache_db = TinyDB(
+                encryption_key=KEY,
+                path="cache.encrypted_db",
+                storage=tae.EncryptedJSONStorage,
+            )
+            cache_db.all()
+            return cache_db
+        except ValueError:
+            print("Invalid password!")
+            input()
 
 
-async def user_input():
+async def user_input(cache_db=None):
     """Checks if the encrypted credentials exist, calls `catBot.initialize_cache` if they don't, then waits for the user to select an option. START starts the quote bot, EXIT stops the program,
     CHANGEPASS lets the user change their password for their encrypted credentials, CHANGEBOT lets the user change their Client ID and Client Secret or the channel for the bot to operate in.
     """
-    if path.isfile("cache.encrypted_db"):
-        cache_db = get_cache()
-    else:
-        initialize_cache()
-    splash.print_splash()
-    print(
-        "\nType START to start the quote bot. If this is your first time running the program, start here."
-    )
-    print("Type EXIT to exit.")
-    print("Type CHANGEPASS to change your password.")
-    print(
-        "Type CHANGEBOT to change your Client ID and Client Secret or your Target Channel.\n"
-    )
-    option = input().lower()
-    if option == "start":
-        splash.print_splash()
-        await startup_checks(cache_db)
-    elif option == "exit":
-        return
-    elif option == "changepass":
-        splash.print_splash()
-        try:
-            password = input("\nEnter current password: ")
-            cache_db = TinyDB(
-                encryption_key=password,
-                path="cache.encrypted_db",
-                storage=tae.EncryptedJSONStorage,
-            )
-            cache_db.all()
-            new_pass = input("\nEnter new password: ")
-            cache_db.storage.change_encryption_key(new_pass)
-            print("\n\033[92mNew password saved. Press ENTER to continue.\033[0m\n")
-            input()
-            await user_input()
-        except ValueError:
-            print(
-                "\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n"
-            )
-            input()
-            await user_input()
-    elif option == "changebot":
-        splash.print_splash()
-        try:
-            password = input("\nEnter password: ")
-            cache_db = TinyDB(
-                encryption_key=password,
-                path="cache.encrypted_db",
-                storage=tae.EncryptedJSONStorage,
-            )
-            cache_db.all()
+    if cache_db is None:
+        if path.isfile("cache.encrypted_db"):
+            cache_db = get_cache()
+        else:
+            cache_db = initialize_cache()
+    while True:
+        print_splash()
+        print(
+            "\nType START to start the quote bot. If this is your first time running the program, start here."
+        )
+        print("Type EXIT to exit.")
+        print("Type CHANGEPASS to change your password.")
+        print(
+            "Type CHANGEBOT to change your Client ID and Client Secret or your Target Channel.\n"
+        )
+        option = input().lower()
+        if option == "start":
+            print_splash()
+            await startup_checks(cache_db)
+        elif option == "exit":
+            return
+        elif option == "changepass":
+            print_splash()
+            try:
+                password = input("\nEnter current password: ")
+                cache_db = TinyDB(
+                    encryption_key=password,
+                    path="cache.encrypted_db",
+                    storage=tae.EncryptedJSONStorage,
+                )
+                cache_db.all()
+                new_pass = input("\nEnter new password: ")
+                cache_db.storage.change_encryption_key(new_pass)
+                print("\n\033[92mNew password saved. Press ENTER to continue.\033[0m\n")
+                input()
+            except ValueError:
+                print(
+                    "\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n"
+                )
+                input()
+        elif option == "changebot":
+            print_splash()
             option = input(
                 "\nEnter APP to change Twitch App information. Enter CHANNEL to change target channel.\n\n"
             ).lower()
@@ -1099,10 +922,9 @@ async def user_input():
                 )
                 print("\n\033[92mUpdate successful. Press ENTER to continue.\033[0m")
                 input()
-                await user_input()
             elif option == "channel":
                 TARGET_CHANNEL = input("Channel for bot to operate in: ")
-                get_cache().update(
+                cache_db.update(
                     {
                         "Bot Info": {
                             "APP_ID": cache_db.get(doc_id=1)
@@ -1118,17 +940,9 @@ async def user_input():
                 )
                 print("\n\033[92mUpdate successful. Press ENTER to continue.\033[0m")
                 input()
-                await user_input()
-        except ValueError:
-            print(
-                "\n\033[93mIncorrect original password. Press ENTER to return.\033[0m\n"
-            )
+        else:
+            print("\n\033[93mInvalid input. Press ENTER to continue.\033[0m")
             input()
-            await user_input()
-    else:
-        print("\n\033[93mInvalid input. Press ENTER to continue.\033[0m")
-        input()
-        await user_input()
 
 
 async def startup_checks(cache_db: TinyDB):
@@ -1138,24 +952,40 @@ async def startup_checks(cache_db: TinyDB):
     :param cache_db: The user's encrypted credentials.
     :type cache_db: tinydb.database.TinyDB
     """
-    program_running = path.isfile("running.temp")
-    if not program_running:
-        with open("running.temp", "w"):
-            pass
+    try:
+        try:
+            with open("running.temp", "x"):
+                pass
+        except FileExistsError:
+            already_running()
+            return
         atexit.register(exit_script)
         try:
-            with open("catBot.toml", "rb") as f:
-                toml = tomllib.load(f)
-                tomlstr = toml.get("format_strings")
-                tomlset = toml.get("settings")
+            with open("catBot.toml", "rb") as fp:
+                toml = tomllib.load(fp)
+            tomlstr = toml.get("format_strings")
+            tomlset = toml.get("settings")
         except FileNotFoundError:
             print(
                 "\033[91mcatBot.toml missing! A new one will be generated for you.\033[0m"
             )
             with open("catBot.toml", mode="w") as fp:
                 fp.write(toml_string.toml_string)
-        con = (sqlite3.connect("quotes.db", check_same_thread=False),)
-        cur = con.cur
+            with open("catBot.toml", "rb") as fp:
+                toml = tomllib.load(fp)
+            tomlstr = toml.get("format_strings")
+            tomlset = toml.get("settings")
+        con = sqlite3.connect("quotes.db", check_same_thread=False)
+        cur = con.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS quotes (
+                        ID INTEGER PRIMARY KEY,
+                        key TEXT UNIQUE,
+                        date TEXT NOT NULL,
+                        user TEXT NOT NULL,
+                        category TEXT,
+                        quote TEXT NOT NULL,
+                        quoter TEXT NOT NULL
+                    );""")
         config = Config(
             con=con,
             cur=cur,
@@ -1173,9 +1003,8 @@ async def startup_checks(cache_db: TinyDB):
             ],
         )
         await start_bot(config)
-
-    else:
-        already_running()
+    finally:
+        exit_script()
 
 
 def exit_script():
